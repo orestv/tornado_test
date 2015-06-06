@@ -13,6 +13,8 @@ ROOT = os.path.curdir
 def make_app():
     return tornado.web.Application([
         url(r'/',  handlers.HelloHandler),
+        url(r'/interact.ws', handlers.ActionHandler),
+        url(r'/status.ws', handlers.TaskStatusHandler),
     ],
         static_path=os.path.join(ROOT, 'static'),
         template_path=os.path.join(ROOT, 'templates'),

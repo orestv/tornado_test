@@ -4,9 +4,9 @@
 
 define(function (require) {
     require('jquery');
-    require('bootstrap');
+    var Reflux = require('reflux');
     var React = require('react');
-
+    var Events = require('events');
 
     var MainContent = React.createClass({
         render: function () {
@@ -17,24 +17,57 @@ define(function (require) {
     });
 
     var StatusBar = React.createClass({
+        mixins: [Reflux.ListenerMixin],
+        getInitialState: function() {
+            return {
+                tasks: {}
+            }
+        },
+        componentDidMount: function(){
+            this.listenTo(Events.stores.StatusStore, this.tasksUpdated);
+        },
+        tasksUpdated: function(tasks) {
+            console.log('Tasks updated on view side');
+        },
         render: function() {
+            var taskList = [];
+            for (var id in this.state.tasks)
+                taskList.push(this.state.tasks[id]);
             return (
-                <div>
-                    Hello world from status bar!
-                </div>
+                <table className="table">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Start date</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {
+                        taskList.map(function(item) {
+                            return (
+                                <StatusBarItem item={item}/>
+                            );
+                        })
+                    }
+                    </tbody>
+                </table>
             );
         }
     });
 
-    $(document).ready(function () {
-        React.render(
-            <MainContent/>,
-            document.getElementById('content')
-        );
-
-        React.render(
-            <StatusBar/>,
-            document.getElementById('status-bar')
-        );
+    var StatusBarItem = React.createClass({
+        render: function() {
+            return (
+                <tr>
+                    <td>{this.props.item.name}</td>
+                    <th>{this.props.item.startDate}</th>
+                </tr>
+            )
+        }
     });
+
+    return {
+        main: MainContent,
+        statusbar: StatusBar
+    }
 });

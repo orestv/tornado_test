@@ -4,9 +4,9 @@
 
 define(function (require) {
     require('jquery');
-    require('bootstrap');
+    var Reflux = require('reflux');
     var React = require('react');
-
+    var Events = require('events');
 
     var MainContent = React.createClass({displayName: "MainContent",
         render: function () {
@@ -17,24 +17,57 @@ define(function (require) {
     });
 
     var StatusBar = React.createClass({displayName: "StatusBar",
+        mixins: [Reflux.ListenerMixin],
+        getInitialState: function() {
+            return {
+                tasks: {}
+            }
+        },
+        componentDidMount: function(){
+            this.listenTo(Events.stores.StatusStore, this.tasksUpdated);
+        },
+        tasksUpdated: function(tasks) {
+            console.log('Tasks updated on view side');
+        },
         render: function() {
+            var taskList = [];
+            for (var id in this.state.tasks)
+                taskList.push(this.state.tasks[id]);
             return (
-                React.createElement("div", null, 
-                    "Hello world from status bar!"
+                React.createElement("table", {className: "table"}, 
+                    React.createElement("thead", null, 
+                    React.createElement("tr", null, 
+                        React.createElement("th", null, "Name"), 
+                        React.createElement("th", null, "Start date")
+                    )
+                    ), 
+                    React.createElement("tbody", null, 
+                    
+                        taskList.map(function(item) {
+                            return (
+                                React.createElement(StatusBarItem, {item: item})
+                            );
+                        })
+                    
+                    )
                 )
             );
         }
     });
 
-    $(document).ready(function () {
-        React.render(
-            React.createElement(MainContent, null),
-            document.getElementById('content')
-        );
-
-        React.render(
-            React.createElement(StatusBar, null),
-            document.getElementById('status-bar')
-        );
+    var StatusBarItem = React.createClass({displayName: "StatusBarItem",
+        render: function() {
+            return (
+                React.createElement("tr", null, 
+                    React.createElement("td", null, this.props.item.name), 
+                    React.createElement("th", null, this.props.item.startDate)
+                )
+            )
+        }
     });
+
+    return {
+        main: MainContent,
+        statusbar: StatusBar
+    }
 });

@@ -14,20 +14,29 @@ requirejs.config({
         // the HTML page.
         jquery: 'lib/bower_components/jquery/dist/jquery.min',
         reflux: 'lib/bower_components/reflux/dist/reflux.min',
-        react: 'lib/bower_components/react/react.min',
+        react: 'lib/bower_components/react/react',
         bootstrap: 'lib/bower_components/bootstrap/dist/js/bootstrap.min'
     }
 });
 
 
 require([
-    //'lib/bower_components/reflux/dist/reflux.min',
-    //'lib/bower_components/jquery/dist/jquery.min',
-    //'lib/bower_components/react/react.min',
     'jquery',
     'reflux',
     'react',
     'bootstrap',
-    'components'
-]);
+    'components',
+    'events'
+], function($, reflux, React, bootstrap, components, events) {
+
+    React.render(
+        React.createElement(components.main),
+        document.getElementById('content')
+    );
+
+    React.render(
+        React.createElement(components.statusbar),
+        document.getElementById('status-bar')
+    );
+});
 
