@@ -38,5 +38,7 @@ require([
         React.createElement(components.statusbar),
         document.getElementById('status-bar')
     );
+
+    setTimeout(events.actions.buttonClickedAction, 2000);
 });
 

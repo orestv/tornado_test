@@ -27,7 +27,7 @@ define(function (require) {
             this.listenTo(Events.stores.StatusStore, this.tasksUpdated);
         },
         tasksUpdated: function(tasks) {
-            console.log('Tasks updated on view side');
+            this.setState({tasks: tasks});
         },
         render: function() {
             var taskList = [];
@@ -60,7 +60,7 @@ define(function (require) {
             return (
                 <tr>
                     <td>{this.props.item.name}</td>
-                    <th>{this.props.item.startDate}</th>
+                    <th>{this.props.item.start_date}</th>
                 </tr>
             )
         }
