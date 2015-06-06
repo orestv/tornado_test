@@ -26,8 +26,9 @@ require([
     'react',
     'bootstrap',
     'components',
-    'events'
-], function($, reflux, React, bootstrap, components, events) {
+    'events_interaction',
+    'events_statusbar'
+], function($, reflux, React, bootstrap, components, events_interaction, events_statusbar) {
 
     React.render(
         React.createElement(components.main),
@@ -39,6 +40,6 @@ require([
         document.getElementById('status-bar')
     );
 
-    setTimeout(events.actions.buttonClickedAction, 2000);
+    setTimeout(events_interaction.actions.buttonClickedAction, 2000);
 });
 

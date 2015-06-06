@@ -2,26 +2,12 @@
  * Created by seth on 6/7/15.
  */
 
-function guid() {
-    function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000)
-            .toString(16)
-            .substring(1);
-    }
-
-    return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-        s4() + '-' + s4() + s4() + s4();
-}
-
-
 define(function(require){
     require('jquery');
     var Reflux = require('reflux');
 
     var tasksReceivedAction = Reflux.createAction();
     var taskUpdatedAction = Reflux.createAction();
-
-    var buttonClickedAction = Reflux.createAction();
 
     var StatusStore = Reflux.createStore({
         init: function(){
@@ -38,24 +24,6 @@ define(function(require){
             this.trigger(this.taskDict);
         }
     });
-
-    var ActionStore = Reflux.createStore({
-        init: function() {
-            this.listenTo(buttonClickedAction, this.buttonClickedHandler);
-        },
-        buttonClickedHandler: function() {
-            var messageDict = {
-                'action': 'buttonClicked'
-            };
-            var messageJSON = JSON.stringify(messageDict);
-            wsInteract.send(messageJSON);
-        }
-    });
-
-    var wsInteract = new WebSocket('ws://' + window.location.host + '/interact.ws');
-    wsInteract.onopen = function() {
-        //wsInteract.close();
-    };
 
     var wsStatus = new WebSocket('ws://' + window.location.host + '/status.ws');
     wsStatus.onmessage = function(evt) {
@@ -74,12 +42,10 @@ define(function(require){
     return {
         actions: {
             tasksReceivedAction: tasksReceivedAction,
-            taskUpdatedAction: taskUpdatedAction,
-            buttonClickedAction: buttonClickedAction
+            taskUpdatedAction: taskUpdatedAction
         },
         stores: {
-            StatusStore: StatusStore,
-            ActionStore: ActionStore
+            StatusStore: StatusStore
         }
     }
 });

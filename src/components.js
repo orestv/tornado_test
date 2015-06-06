@@ -6,7 +6,7 @@ define(function (require) {
     require('jquery');
     var Reflux = require('reflux');
     var React = require('react');
-    var Events = require('events');
+    var EventsStatusBar = require('events_statusbar');
 
     var MainContent = React.createClass({
         render: function () {
@@ -24,7 +24,7 @@ define(function (require) {
             }
         },
         componentDidMount: function(){
-            this.listenTo(Events.stores.StatusStore, this.tasksUpdated);
+            this.listenTo(EventsStatusBar.stores.StatusStore, this.tasksUpdated);
         },
         tasksUpdated: function(tasks) {
             this.setState({tasks: tasks});
