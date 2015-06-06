@@ -1,0 +1,22 @@
+{
+  "name": "requirements",
+  "version": "0.0.0",
+  "authors": [
+    "Orest Voloschuk <orest.v@gmail.com>"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.4",
+    "requirejs": "~2.1.18",
+    "react": "~0.13.3",
+    "reflux": "~0.2.7",
+    "bootstrap": "~3.3.4"
+  }
+}
