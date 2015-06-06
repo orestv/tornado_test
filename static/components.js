@@ -60,7 +60,7 @@ define(function (require) {
             return (
                 React.createElement("tr", null, 
                     React.createElement("td", null, this.props.item.name), 
-                    React.createElement("th", null, this.props.item.start_date)
+                    React.createElement("td", null, this.props.item.start_date)
                 )
             )
         }

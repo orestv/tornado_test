@@ -60,7 +60,7 @@ define(function (require) {
             return (
                 <tr>
                     <td>{this.props.item.name}</td>
-                    <th>{this.props.item.start_date}</th>
+                    <td>{this.props.item.start_date}</td>
                 </tr>
             )
         }
