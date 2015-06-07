@@ -45,7 +45,7 @@ define(function (require) {
                     {
                         taskList.map(function(item) {
                             return (
-                                <StatusBarItem item={item}/>
+                                <StatusBarItem key={item.id} item={item}/>
                             );
                         })
                     }

@@ -45,7 +45,7 @@ define(function (require) {
                     
                         taskList.map(function(item) {
                             return (
-                                React.createElement(StatusBarItem, {item: item})
+                                React.createElement(StatusBarItem, {key: item.id, item: item})
                             );
                         })
                     
