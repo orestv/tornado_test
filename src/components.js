@@ -39,6 +39,7 @@ define(function (require) {
                     <tr>
                         <th>Name</th>
                         <th>Start date</th>
+                        <th>Status</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -61,6 +62,7 @@ define(function (require) {
                 <tr>
                     <td>{this.props.item.name}</td>
                     <td>{this.props.item.start_date}</td>
+                    <td>{this.props.item.status}</td>
                 </tr>
             )
         }

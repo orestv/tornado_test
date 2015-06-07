@@ -38,7 +38,8 @@ define(function (require) {
                     React.createElement("thead", null, 
                     React.createElement("tr", null, 
                         React.createElement("th", null, "Name"), 
-                        React.createElement("th", null, "Start date")
+                        React.createElement("th", null, "Start date"), 
+                        React.createElement("th", null, "Status")
                     )
                     ), 
                     React.createElement("tbody", null, 
@@ -60,7 +61,8 @@ define(function (require) {
             return (
                 React.createElement("tr", null, 
                     React.createElement("td", null, this.props.item.name), 
-                    React.createElement("td", null, this.props.item.start_date)
+                    React.createElement("td", null, this.props.item.start_date), 
+                    React.createElement("td", null, this.props.item.status)
                 )
             )
         }

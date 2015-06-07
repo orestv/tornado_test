@@ -1,5 +1,7 @@
 import datetime
+import functools
 import json
+import time
 import uuid
 
 import tornado
@@ -16,6 +18,8 @@ class TaskStatusHandler(tornado.websocket.WebSocketHandler):
     _tasks = {}
     _clients = []
 
+    ACTION_UPDATE = 'UPDATE'
+
     @staticmethod
     def add_task(name, status):
         task_id = uuid.uuid4().get_hex()
@@ -28,8 +32,21 @@ class TaskStatusHandler(tornado.websocket.WebSocketHandler):
         TaskStatusHandler._tasks[task_id] = task
 
         message_dict = {
-            'action': 'UPDATE',
+            'action': TaskStatusHandler.ACTION_UPDATE,
             'task': task,
+        }
+        TaskStatusHandler.send_all_clients(message_dict)
+
+        return task_id
+
+    @staticmethod
+    def update_task(task_id, status):
+        task = TaskStatusHandler.tasks()[task_id]
+        task['status'] = status
+
+        message_dict = {
+            'action': TaskStatusHandler.ACTION_UPDATE,
+            'task': task
         }
         TaskStatusHandler.send_all_clients(message_dict)
 
@@ -64,6 +81,26 @@ class TaskStatusHandler(tornado.websocket.WebSocketHandler):
         pass
 
 
+def task(task_name, initial_status, final_status=None):
+
+    def decorator(func):
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            task_id = TaskStatusHandler.add_task(task_name, initial_status)
+            kwargs['task_id'] = task_id
+            try:
+                result = func(*args, **kwargs)
+                if final_status:
+                    TaskStatusHandler.update_task(task_id, final_status)
+                return result
+            except Exception as e:
+                TaskStatusHandler.update_task(task_id, 'Exception: {0}'.format(e.message))
+
+        return wrapper
+
+    return decorator
+
 class ActionHandler(tornado.websocket.WebSocketHandler):
 
     def get_handler(self, action):
@@ -72,14 +109,17 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         }
         return handlers[action]
 
-    @tornado.gen.coroutine
-    def button_clicked_handler(self, parameters):
-        TaskStatusHandler.add_task('button clicked', 'Started')
+    @task('Button clicked', 'Started...', 'Finished')
+    def button_clicked_handler(self, task_id, parameters):
+        time.sleep(2)
 
     def on_message(self, message):
         message_dict = json.loads(message)
         handler = self.get_handler(message_dict['action'])
         parameters = message_dict.get('parameters', None)
 
-        handler(parameters)
+        try:
+            handler(parameters=parameters)
+        except Exception as e:
+            pass
 
