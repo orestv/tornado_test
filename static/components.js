@@ -7,12 +7,22 @@ define(function (require) {
     var Reflux = require('reflux');
     var React = require('react');
     var EventsStatusBar = require('events_statusbar');
+    var EventsInteraction = require('events_interaction');
 
     var VMList = React.createClass({displayName: "VMList",
+        mixins: [Reflux.ListenerMixin],
         getInitialState: function() {
             return {
                 vms: []
             }
+        },
+        componentDidMount: function() {
+            this.listenTo(EventsInteraction.stores.VMListStore, this.loadVMList);
+        },
+        loadVMList: function(vmList) {
+            this.setState({
+                vms: vmList
+            })
         },
         render: function () {
             return (
@@ -27,7 +37,7 @@ define(function (require) {
                 React.createElement("tbody", null, 
                 this.state.vms.map(function(vm){
                     return (
-                        React.createElement(VMRow, {vm: vm})
+                        React.createElement(VMRow, {key: vm.id, vm: vm})
                     )
                 })
                 )
@@ -55,6 +65,21 @@ define(function (require) {
                     React.createElement("button", {className: "button"}, 
                         React.createElement("span", {className: "glyphicon glyphicon-refresh"}), 
                         "Refresh"
+                    )
+                )
+            )
+        }
+    });
+
+    var Navbar = React.createClass({displayName: "Navbar",
+        btnRefreshClick: function() {
+            EventsInteraction.actions.fetchVMListAction();
+        },
+        render: function() {
+            return (
+                React.createElement("form", {action: "#", className: "navbar-form navbar-left"}, 
+                    React.createElement("button", {className: "btn btn-default btn-lg", onClick: this.btnRefreshClick}, 
+                        React.createElement("span", {className: "glyphicon glyphicon-refresh"}), " Refresh"
                     )
                 )
             )
@@ -115,6 +140,7 @@ define(function (require) {
 
     return {
         vmList: VMList,
-        statusbar: StatusBar
+        statusbar: StatusBar,
+        navbar: Navbar
     }
 });

@@ -101,17 +101,53 @@ def task(task_name, initial_status, final_status=None):
 
     return decorator
 
+
 class ActionHandler(tornado.websocket.WebSocketHandler):
+    ACTION_VM_LIST = 'VMList'
 
     def get_handler(self, action):
         handlers = {
-            'buttonClicked': self.button_clicked_handler,
+            'refreshVMList': self.refresh_vm_list_handler,
         }
         return handlers[action]
 
-    @task('Button clicked', 'Started...', 'Finished')
-    def button_clicked_handler(self, task_id, parameters):
+    def get_vm_list(self):
         time.sleep(2)
+        return [
+            {
+                'id': 'dev-c801-01',
+                'name': 'dev-c801-01',
+                'currentSnapshotName': None,
+            },
+            {
+                'id': 'dev-c801-02',
+                'name': 'dev-c801-02',
+                'currentSnapshotName': 'Clean 7.6.3',
+            },
+            {
+                'id': 'dev-c801-03',
+                'name': 'dev-c801-03',
+                'currentSnapshotName': None,
+            },
+        ]
+
+    @tornado.gen.coroutine
+    @task('VM List fetch', 'Started...')
+    def refresh_vm_list_handler(self, task_id, parameters):
+        TaskStatusHandler.update_task(task_id, 'Fetching VM list...')
+        vm_list = yield self.application.executor.submit(self.get_vm_list)
+        TaskStatusHandler.update_task(task_id, 'VM list fetched...')
+
+        message_dict = {
+            'action': ActionHandler.ACTION_VM_LIST,
+            'vm_list': vm_list,
+        }
+        message_json = json.dumps(message_dict)
+        self.write_message(message_json)
+
+        TaskStatusHandler.update_task(task_id, 'Finished')
+
+        raise tornado.gen.Return()
 
     def on_message(self, message):
         message_dict = json.loads(message)

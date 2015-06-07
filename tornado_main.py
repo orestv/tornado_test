@@ -16,6 +16,9 @@ class Application(tornado.web.Application):
 
     @property
     def executor(self):
+        """
+        :rtype: concurrent.futures.thread.ThreadPoolExecutor
+        """
         return self._executor
 
 

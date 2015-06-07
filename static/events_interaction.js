@@ -13,15 +13,16 @@ define(function(require){
     require('jquery');
     var Reflux = require('reflux');
 
-    var buttonClickedAction = Reflux.createAction();
+    var fetchVMListAction = Reflux.createAction();
+    var reloadVMListAction = Reflux.createAction();
 
     var InteractionStore = Reflux.createStore({
         init: function() {
-            this.listenTo(buttonClickedAction, this.buttonClickedHandler);
+            this.listenTo(fetchVMListAction, this.refreshHandler);
         },
-        buttonClickedHandler: function() {
+        refreshHandler: function() {
             var messageDict = {
-                'action': 'buttonClicked'
+                'action': 'refreshVMList'
             };
             var messageJSON = JSON.stringify(messageDict);
             wsInteract.send(messageJSON);
@@ -31,17 +32,33 @@ define(function(require){
         }
     });
 
+    var VMListStore = Reflux.createStore({
+        init: function() {
+            this.listenTo(reloadVMListAction, this.reloadHandler);
+        },
+        reloadHandler: function(vmList) {
+            this.trigger(vmList);
+        }
+    });
+
     var wsInteract = new WebSocket('ws://' + window.location.host + '/interact.ws');
     wsInteract.onmessage = function(evt) {
         var data = JSON.parse(evt.data);
+        switch(data.action) {
+            case 'VMList':
+                reloadVMListAction(data.vm_list);
+                break;
+        }
     };
 
     return {
         actions: {
-            buttonClickedAction: buttonClickedAction
+            fetchVMListAction: fetchVMListAction,
+            reloadVMListAction: reloadVMListAction
         },
         stores: {
-            ActionStore: InteractionStore
+            ActionStore: InteractionStore,
+            VMListStore: VMListStore
         }
     }
 });

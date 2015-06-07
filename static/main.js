@@ -13,7 +13,7 @@ requirejs.config({
         // js/lib/jquery-1.9.0.js, relative to
         // the HTML page.
         jquery: 'lib/bower_components/jquery/dist/jquery.min',
-        reflux: 'lib/bower_components/reflux/dist/reflux.min',
+        reflux: 'lib/bower_components/reflux/dist/reflux',
         react: 'lib/bower_components/react/react',
         bootstrap: 'lib/bower_components/bootstrap/dist/js/bootstrap.min'
     }
@@ -37,9 +37,13 @@ require([
 
     React.render(
         React.createElement(components.statusbar),
-        document.getElementById('status-bar')
+        document.getElementById('statusbar')
     );
 
-    setTimeout(events_interaction.actions.buttonClickedAction, 2000);
+    React.render(
+        React.createElement(components.navbar),
+        document.getElementById('navbar')
+    )
+
 });
 
