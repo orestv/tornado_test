@@ -8,11 +8,56 @@ define(function (require) {
     var React = require('react');
     var EventsStatusBar = require('events_statusbar');
 
-    var MainContent = React.createClass({displayName: "MainContent",
+    var VMList = React.createClass({displayName: "VMList",
+        getInitialState: function() {
+            return {
+                vms: []
+            }
+        },
         render: function () {
             return (
-                React.createElement("div", null, "Hello world!")
+                React.createElement("table", {className: "table"}, 
+                React.createElement("thead", null, 
+                    React.createElement("tr", null, 
+                        React.createElement("th", null, "Name"), 
+                        React.createElement("th", null, "Current Snapshot"), 
+                        React.createElement("th", null, "Actions")
+                    )
+                ), 
+                React.createElement("tbody", null, 
+                this.state.vms.map(function(vm){
+                    return (
+                        React.createElement(VMRow, {vm: vm})
+                    )
+                })
+                )
+                )
             );
+        }
+    });
+
+    var VMRow = React.createClass({displayName: "VMRow",
+        render: function() {
+            return (
+                React.createElement("tr", null, 
+                    React.createElement("td", null, this.props.vm.name), 
+                    React.createElement("td", null, this.props.vm.currentSnapshotName), 
+                    React.createElement("td", null, React.createElement(VMActions, {vm: this.props.vm}))
+                )
+            )
+        }
+    });
+
+    var VMActions = React.createClass({displayName: "VMActions",
+        render: function() {
+            return (
+                React.createElement("div", null, 
+                    React.createElement("button", {className: "button"}, 
+                        React.createElement("span", {className: "glyphicon glyphicon-refresh"}), 
+                        "Refresh"
+                    )
+                )
+            )
         }
     });
 
@@ -69,7 +114,7 @@ define(function (require) {
     });
 
     return {
-        main: MainContent,
+        vmList: VMList,
         statusbar: StatusBar
     }
 });

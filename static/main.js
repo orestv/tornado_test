@@ -31,8 +31,8 @@ require([
 ], function($, reflux, React, bootstrap, components, events_interaction, events_statusbar) {
 
     React.render(
-        React.createElement(components.main),
-        document.getElementById('content')
+        React.createElement(components.vmList),
+        document.getElementById('vmList')
     );
 
     React.render(

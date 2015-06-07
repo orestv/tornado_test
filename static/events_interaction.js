@@ -34,7 +34,7 @@ define(function(require){
     var wsInteract = new WebSocket('ws://' + window.location.host + '/interact.ws');
     wsInteract.onmessage = function(evt) {
         var data = JSON.parse(evt.data);
-    }
+    };
 
     return {
         actions: {

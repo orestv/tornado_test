@@ -8,11 +8,56 @@ define(function (require) {
     var React = require('react');
     var EventsStatusBar = require('events_statusbar');
 
-    var MainContent = React.createClass({
+    var VMList = React.createClass({
+        getInitialState: function() {
+            return {
+                vms: []
+            }
+        },
         render: function () {
             return (
-                <div>Hello world!</div>
+                <table className="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Current Snapshot</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {this.state.vms.map(function(vm){
+                    return (
+                        <VMRow vm={vm}/>
+                    )
+                })}
+                </tbody>
+                </table>
             );
+        }
+    });
+
+    var VMRow = React.createClass({
+        render: function() {
+            return (
+                <tr>
+                    <td>{this.props.vm.name}</td>
+                    <td>{this.props.vm.currentSnapshotName}</td>
+                    <td><VMActions vm={this.props.vm}/></td>
+                </tr>
+            )
+        }
+    });
+
+    var VMActions = React.createClass({
+        render: function() {
+            return (
+                <div>
+                    <button className="button">
+                        <span className="glyphicon glyphicon-refresh"></span>
+                        Refresh
+                    </button>
+                </div>
+            )
         }
     });
 
@@ -69,7 +114,7 @@ define(function (require) {
     });
 
     return {
-        main: MainContent,
+        vmList: VMList,
         statusbar: StatusBar
     }
 });
