@@ -72,13 +72,14 @@ define(function (require) {
     });
 
     var Navbar = React.createClass({
-        btnRefreshClick: function() {
+        btnRefreshClick: function(evt) {
+            evt.preventDefault();
             EventsInteraction.actions.fetchVMListAction();
         },
         render: function() {
             return (
-                <form action="#" className="navbar-form navbar-left">
-                    <button className="btn btn-default btn-lg" onClick={this.btnRefreshClick}>
+                <form action="#" className="navbar-form navbar-left" onSubmit={this.btnRefreshClick}>
+                    <button className="btn btn-default btn-lg">
                         <span className="glyphicon glyphicon-refresh"></span> Refresh
                     </button>
                 </form>

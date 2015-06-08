@@ -72,13 +72,14 @@ define(function (require) {
     });
 
     var Navbar = React.createClass({displayName: "Navbar",
-        btnRefreshClick: function() {
+        btnRefreshClick: function(evt) {
+            evt.preventDefault();
             EventsInteraction.actions.fetchVMListAction();
         },
         render: function() {
             return (
-                React.createElement("form", {action: "#", className: "navbar-form navbar-left"}, 
-                    React.createElement("button", {className: "btn btn-default btn-lg", onClick: this.btnRefreshClick}, 
+                React.createElement("form", {action: "#", className: "navbar-form navbar-left", onSubmit: this.btnRefreshClick}, 
+                    React.createElement("button", {className: "btn btn-default btn-lg"}, 
                         React.createElement("span", {className: "glyphicon glyphicon-refresh"}), " Refresh"
                     )
                 )
