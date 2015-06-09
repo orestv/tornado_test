@@ -16,28 +16,20 @@ define(function(require){
     var fetchVMListAction = Reflux.createAction();
     var reloadVMListAction = Reflux.createAction();
 
-    var InteractionStore = Reflux.createStore({
+    var VMListStore = Reflux.createStore({
         init: function() {
+            this.listenTo(reloadVMListAction, this.reloadHandler);
             this.listenTo(fetchVMListAction, this.refreshHandler);
         },
-        refreshHandler: function() {
+        reloadHandler: function(vmList) {
+            this.trigger(vmList);
+        },
+        refreshHandler: function () {
             var messageDict = {
                 'action': 'refreshVMList'
             };
             var messageJSON = JSON.stringify(messageDict);
             wsInteract.send(messageJSON);
-        },
-        action: function(messageDict) {
-            messageDict.id = uuid();
-        }
-    });
-
-    var VMListStore = Reflux.createStore({
-        init: function() {
-            this.listenTo(reloadVMListAction, this.reloadHandler);
-        },
-        reloadHandler: function(vmList) {
-            this.trigger(vmList);
         }
     });
 
@@ -57,7 +49,6 @@ define(function(require){
             reloadVMListAction: reloadVMListAction
         },
         stores: {
-            ActionStore: InteractionStore,
             VMListStore: VMListStore
         }
     }
