@@ -15,7 +15,31 @@ define(function(require){
 
     var fetchVMListAction = Reflux.createAction();
     var reloadVMListAction = Reflux.createAction();
-    var dataStoreSelectedAction = Reflux.createAction();
+    var connectAction = Reflux.createAction();
+    var connectedAction = Reflux.createAction();
+    var disconnectedAction = Reflux.createAction();
+
+    var ConnectionStore = Reflux.createStore({
+        init: function() {
+            this.listenTo(connectAction, this.connectHandler);
+            this.listenTo(connectedAction, this.connectedHandler);
+            this.listenTo(disconnectedAction, this.disconnectedHandler);
+        },
+        connectHandler: function(vCenterConnectionInfo) {
+            var messageDict = {
+                action: 'Connect',
+                parameters: vCenterConnectionInfo
+            };
+            wsInteract.send(JSON.stringify(messageDict));
+        },
+        connectedHandler: function(vCenter) {
+            this.trigger(vCenter);
+            fetchVMListAction();
+        },
+        disconnectedHandler: function() {
+            this.trigger(null);
+        }
+    });
 
     var VMListStore = Reflux.createStore({
         init: function() {
@@ -41,16 +65,25 @@ define(function(require){
             case 'VMList':
                 reloadVMListAction(data.vm_list);
                 break;
+            case 'Connect':
+                connectedAction(data.vCenter);
+                break;
         }
+    };
+    wsInteract.onclose = function() {
+        disconnectedAction();
     };
 
     return {
         actions: {
             fetchVMListAction: fetchVMListAction,
-            reloadVMListAction: reloadVMListAction
+            reloadVMListAction: reloadVMListAction,
+            connectedAction: connectedAction,
+            connectAction: connectAction
         },
         stores: {
-            VMListStore: VMListStore
+            VMListStore: VMListStore,
+            ConnectionStore: ConnectionStore
         }
     }
 });

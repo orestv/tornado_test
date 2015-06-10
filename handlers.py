@@ -1,6 +1,7 @@
 import datetime
 import functools
 import json
+import re
 import time
 import uuid
 
@@ -8,6 +9,9 @@ import tornado
 import tornado.gen
 import tornado.web
 import tornado.websocket
+
+import pysphere
+
 
 class HelloHandler(tornado.web.RequestHandler):
     def get(self, *args, **kwargs):
@@ -104,32 +108,31 @@ def task(task_name, initial_status, final_status=None):
 
 class ActionHandler(tornado.websocket.WebSocketHandler):
     ACTION_VM_LIST = 'VMList'
+    ACTION_CONNECT = 'Connect'
+
+    server = None
 
     def get_handler(self, action):
         handlers = {
             'refreshVMList': self.refresh_vm_list_handler,
+            'Connect': self.connect,
         }
         return handlers[action]
 
     def get_vm_list(self):
-        time.sleep(2)
-        return [
-            {
-                'id': 'dev-c801-01',
-                'name': 'dev-c801-01',
-                'currentSnapshotName': None,
-            },
-            {
-                'id': 'dev-c801-02',
-                'name': 'dev-c801-02',
-                'currentSnapshotName': 'Clean 7.6.3',
-            },
-            {
-                'id': 'dev-c801-03',
-                'name': 'dev-c801-03',
-                'currentSnapshotName': None,
-            },
-        ]
+        vms = self.server.get_registered_vms()
+        vm_regexp = re.compile('(?P<datastore>\[.*\]) (?P<name>.*)/(?P<path>.*)')
+        result_list = []
+        for vm in vms:
+            match = re.match(vm_regexp, vm)
+            result_list.append({
+                'datastore': match.group('datastore'),
+                'id': match.group('path'),
+                'name': match.group('name'),
+                'path': match.group('path'),
+            })
+
+        return result_list
 
     @tornado.gen.coroutine
     @task('VM List fetch', 'Started...')
@@ -148,6 +151,22 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         TaskStatusHandler.update_task(task_id, 'Finished')
 
         raise tornado.gen.Return()
+
+    @task('Connect to vCenter', 'Initiating connection', 'Connected successfully!')
+    def connect(self, task_id, parameters):
+        vCenterHost = parameters['vCenter']
+        vCenterUsername = parameters['username']
+        vCenterPassword = parameters['password']
+
+        TaskStatusHandler.update_task(task_id, 'Connecting to vCenter {0}'.format(vCenterHost))
+        self.server = pysphere.VIServer()
+        self.server.connect(vCenterHost, vCenterUsername, vCenterPassword)
+
+        message_dict = {
+            'action': ActionHandler.ACTION_CONNECT,
+            'vCenter': vCenterHost
+        }
+        self.write_message(json.dumps(message_dict))
 
     def on_message(self, message):
         message_dict = json.loads(message)
