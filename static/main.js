@@ -25,23 +25,27 @@ require([
     'reflux',
     'react',
     'bootstrap',
-    'components',
+    'navbar',
+    'statusbar',
+    'vm_list',
     'events_interaction',
     'events_statusbar'
-], function($, reflux, React, bootstrap, components, events_interaction, events_statusbar) {
+], function($, reflux, React, bootstrap,
+            NavBar, StatusBar, VMList,
+            events_interaction, events_statusbar) {
 
     React.render(
-        React.createElement(components.vmList),
+        React.createElement(VMList),
         document.getElementById('vmList')
     );
 
     React.render(
-        React.createElement(components.statusbar),
+        React.createElement(StatusBar),
         document.getElementById('statusbar')
     );
 
     React.render(
-        React.createElement(components.navbar),
+        React.createElement(NavBar),
         document.getElementById('navbar')
     )
 

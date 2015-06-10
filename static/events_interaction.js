@@ -15,6 +15,7 @@ define(function(require){
 
     var fetchVMListAction = Reflux.createAction();
     var reloadVMListAction = Reflux.createAction();
+    var dataStoreSelectedAction = Reflux.createAction();
 
     var VMListStore = Reflux.createStore({
         init: function() {
