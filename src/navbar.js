@@ -3,7 +3,7 @@
  */
 
 define(function(require) {
-    $ = require('jquery');
+    var $ = require('jquery');
     var Reflux = require('reflux');
     var React = require('react');
     var EventsInteraction = require('events_interaction');
@@ -20,6 +20,21 @@ define(function(require) {
     });
 
     var DataCenterForm = React.createClass({
+        mixins: [Reflux.ListenerMixin],
+        getInitialState: function() {
+            return {
+                enabled: true
+            }
+        },
+        componentDidMount: function() {
+            this.listenTo(EventsInteraction.stores.ConnectionStore, this.connectionStateChanged);
+        },
+        connectionStateChanged: function(connectionState) {
+            var state = {
+                enabled: connectionState.connected || connectionState.connecting
+            };
+            this.setState(state);
+        },
         btnConnectClick: function (evt) {
             evt.preventDefault();
             var formData = $('#vCenterConnectForm').serializeArray();
@@ -35,15 +50,24 @@ define(function(require) {
             return (
                 <form action="#" id="vCenterConnectForm" className="navbar-form navbar-left" onSubmit={this.btnConnectClick}>
                     <div className="form-group">
-                        <input type="text" name="vCenter" className="form-control" placeholder="vCenter" defaultValue="localhost:9101"/>
+                        <input type="text" name="vCenter" className="form-control"
+                               placeholder="vCenter" defaultValue="localhost:9101"
+                               disabled={this.state.enabled ? '' : 'disabled'}
+                            />
                     </div>
                     <div className="form-group">
-                        <input type="text" name="username" className="form-control" placeholder="Username" defaultValue="atlas"/>
+                        <input type="text" name="username" className="form-control"
+                               placeholder="Username" defaultValue="atlas"
+                               disabled={this.state.enabled ? '' : 'disabled'}
+                            />
                     </div>
                     <div className="form-group">
-                        <input type="password" name="password" className="form-control" placeholder="Password" defaultValue=""/>
+                        <input type="password" name="password" className="form-control"
+                               placeholder="Password" defaultValue=""
+                               disabled={this.state.enabled ? '' : 'disabled'}
+                            />
                     </div>
-                    <button className="btn btn-default">
+                    <button className="btn btn-default" disabled={this.state.enabled ? '' : 'disabled'}>
                         <span className="glyphicon glyphicon-flash"></span> Connect
                     </button>
                 </form>
@@ -56,32 +80,33 @@ define(function(require) {
         getInitialState: function() {
             return {
                 connected: false,
+                connecting: false,
                 vCenter: null
             }
         },
         componentDidMount: function() {
             this.listenTo(EventsInteraction.stores.ConnectionStore, this.connectionStateChanged);
         },
-        connectionStateChanged: function(vCenter) {
-            if (vCenter != null) {
-                this.setState({
-                    connected: true,
-                    vCenter: vCenter
-                });
-            }
-            else {
-                this.setState({
-                    connected: false,
-                    vCenter: null
-                });
-            }
+        connectionStateChanged: function(connectionState) {
+            this.setState({
+                connected: connectionState.connected,
+                connecting: connectionState.connecting,
+                vCenter: connectionState.vCenter
+            });
         },
         render: function() {
+            var message = '';
+            if (this.state.connected)
+                message = "Connected to " + this.state.vCenter;
+            else if (this.state.connecting)
+                message = "Connecting to " + this.state.vCenter;
+            else
+                message = "Disconnected";
             return (
                 <ul className="nav navbar-nav navbar-right">
                     <li>
                         <a href="#">
-                            {this.state.connected ? "Connected to " + this.state.vCenter : "Disconnected"}
+                            {message}
                         </a>
                     </li>
                 </ul>

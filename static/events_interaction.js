@@ -26,6 +26,7 @@ define(function(require){
             this.listenTo(disconnectedAction, this.disconnectedHandler);
         },
         connectHandler: function(vCenterConnectionInfo) {
+            this.trigger({connected: false, connecting: true, vCenter: vCenterConnectionInfo.vCenter});
             var messageDict = {
                 action: 'connect',
                 parameters: vCenterConnectionInfo
@@ -33,11 +34,11 @@ define(function(require){
             wsInteract.send(JSON.stringify(messageDict));
         },
         connectedHandler: function(vCenter) {
-            this.trigger(vCenter);
+            this.trigger({connected: true, connecting: false, vCenter: vCenter});
             fetchVMListAction();
         },
         disconnectedHandler: function() {
-            this.trigger(null);
+            this.trigger({connected: false, connecting: false, vCenter: null});
         }
     });
 
