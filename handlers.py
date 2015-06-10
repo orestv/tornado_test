@@ -5,6 +5,7 @@ import json
 import re
 import time
 import uuid
+from pysphere.vi_virtual_machine import VIVirtualMachine
 
 import tornado
 import tornado.gen
@@ -130,8 +131,11 @@ def task(task_name, initial_status, final_status=None):
 class ActionHandler(tornado.websocket.WebSocketHandler):
     ACTION_REFRESH_VM_LIST = 'refresh_vm_list'
     ACTION_CONNECT = 'connect'
+    ACTION_FETCH_SNAPSHOTS = 'fetch_snapshots'
 
     MSG_VM_LIST = 'vm_list'
+    MSG_SNAPSHOT_LIST = 'snapshot_list'
+
     MSG_CONNECTED = 'connected'
     MSG_DISCONNECTED = 'disconnected'
 
@@ -141,6 +145,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         handlers = {
             self.ACTION_REFRESH_VM_LIST: self.refresh_vm_list_handler,
             self.ACTION_CONNECT: self.connect,
+            self.ACTION_FETCH_SNAPSHOTS: self.get_snapshots,
         }
         return handlers[action]
 
@@ -158,6 +163,29 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
             })
 
         return result_list
+
+    @tornado.gen.coroutine
+    @task('Snapshots fetch', 'Started...')
+    def get_snapshots(self, task_id, parameters):
+
+        vm_name = parameters['vm_id']
+
+        TaskStatusHandler.update_task(task_id, 'Searching for vm {0}...'.format(vm_name))
+
+        vm = yield self.application.executor.submit(self.server.get_vm_by_name, parameters['vm_id'])
+
+        TaskStatusHandler.update_task(task_id, 'Found vm {0}, looking for snapshots...'.format(vm_name))
+
+        snapshots = yield self.application.executor.submit(vm.get_snapshots)
+
+        snapshot_list = [snapshot.get_name() for snapshot in snapshots]
+
+        self.send_typed_message(ActionHandler.MSG_SNAPSHOT_LIST,
+                                vm_id=parameters['vm_id'],
+                                snapshot_list=snapshot_list)
+
+        TaskStatusHandler.update_task(task_id, 'Snapshots for VM {0} fetched!'.format(vm_name))
+        TaskStatusHandler.delete_task(task_id)
 
     @tornado.gen.coroutine
     @task('VM List fetch', 'Started...')

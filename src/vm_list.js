@@ -58,12 +58,25 @@ define(function (require) {
     });
 
     var VMActions = React.createClass({
+        mixins: [Reflux.ListenerMixin],
+        componentDidMount: function () {
+            this.listenTo(EventsInteraction.stores.VMStateStore, this.vmStateChanged);
+        },
+        vmStateChanged: function(vmState, vmId) {
+            if (vmId != null && vmId != this.props.vm.name)
+                return;
+            var thisVmState = vmState[vmId];
+            console.log(thisVmState);
+        },
+        btnRefreshSnapshotsClick: function() {
+            EventsInteraction.actions.fetchSnapshotsAction(this.props.vm.name);
+
+        },
         render: function () {
             return (
                 <div>
-                    <button className="button">
-                        <span className="glyphicon glyphicon-refresh"></span>
-                        Refresh
+                    <button className="button" onClick={this.btnRefreshSnapshotsClick}>
+                        <span className="glyphicon glyphicon-refresh"></span> Load Snapshots
                     </button>
                 </div>
             )

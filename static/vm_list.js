@@ -58,12 +58,25 @@ define(function (require) {
     });
 
     var VMActions = React.createClass({displayName: "VMActions",
+        mixins: [Reflux.ListenerMixin],
+        componentDidMount: function () {
+            this.listenTo(EventsInteraction.stores.VMStateStore, this.vmStateChanged);
+        },
+        vmStateChanged: function(vmState, vmId) {
+            if (vmId != null && vmId != this.props.vm.name)
+                return;
+            var thisVmState = vmState[vmId];
+            console.log(thisVmState);
+        },
+        btnRefreshSnapshotsClick: function() {
+            EventsInteraction.actions.fetchSnapshotsAction(this.props.vm.name);
+
+        },
         render: function () {
             return (
                 React.createElement("div", null, 
-                    React.createElement("button", {className: "button"}, 
-                        React.createElement("span", {className: "glyphicon glyphicon-refresh"}), 
-                        "Refresh"
+                    React.createElement("button", {className: "button", onClick: this.btnRefreshSnapshotsClick}, 
+                        React.createElement("span", {className: "glyphicon glyphicon-refresh"}), " Load Snapshots"
                     )
                 )
             )

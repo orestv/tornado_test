@@ -15,9 +15,13 @@ define(function(require){
 
     var fetchVMListAction = Reflux.createAction();
     var reloadVMListAction = Reflux.createAction();
+
     var connectAction = Reflux.createAction();
     var connectedAction = Reflux.createAction();
     var disconnectedAction = Reflux.createAction();
+
+    var fetchSnapshotsAction = Reflux.createAction();
+    var snapshotsFetchedAction = Reflux.createAction();
 
     var ConnectionStore = Reflux.createStore({
         init: function() {
@@ -39,6 +43,30 @@ define(function(require){
         },
         disconnectedHandler: function() {
             this.trigger({connected: false, connecting: false, vCenter: null});
+        }
+    });
+
+    var VMStateStore = Reflux.createStore({
+        init: function() {
+            this.vmState = {};
+            this.listenTo(snapshotsFetchedAction, this.snapshotsFetched);
+            this.listenTo(fetchSnapshotsAction, this.fetchSnapshots);
+        },
+        fetchSnapshots: function(vmId) {
+            var messageDict = {
+                action: 'fetch_snapshots',
+                parameters: {
+                    vm_id: vmId
+                }
+            };
+            wsInteract.send(JSON.stringify(messageDict));
+        },
+        snapshotsFetched: function(vmSnapshots) {
+            var vmId = vmSnapshots.vm_id;
+            if (!(vmId in this.vmState))
+                this.vmState[vmId] = {};
+            this.vmState[vmId].snapshot_list = vmSnapshots.snapshot_list;
+            this.trigger(this.vmState, vmId);
         }
     });
 
@@ -72,6 +100,9 @@ define(function(require){
             case 'disconnected':
                 disconnectedAction();
                 break;
+            case 'snapshot_list':
+                snapshotsFetchedAction(data.parameters);
+                break
         }
     };
     wsInteract.onclose = function() {
@@ -83,11 +114,15 @@ define(function(require){
             fetchVMListAction: fetchVMListAction,
             reloadVMListAction: reloadVMListAction,
             connectedAction: connectedAction,
-            connectAction: connectAction
+            connectAction: connectAction,
+            disconnectedAction: disconnectedAction,
+            fetchSnapshotsAction: fetchSnapshotsAction,
+            snapshotsFetchedAction: snapshotsFetchedAction
         },
         stores: {
             VMListStore: VMListStore,
-            ConnectionStore: ConnectionStore
+            ConnectionStore: ConnectionStore,
+            VMStateStore: VMStateStore
         }
     }
 });
