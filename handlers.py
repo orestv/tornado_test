@@ -107,15 +107,18 @@ def task(task_name, initial_status, final_status=None):
 
 
 class ActionHandler(tornado.websocket.WebSocketHandler):
-    ACTION_VM_LIST = 'VMList'
-    ACTION_CONNECT = 'Connect'
+    ACTION_REFRESH_VM_LIST = 'refresh_vm_list'
+    ACTION_CONNECT = 'connect'
+
+    MSG_VM_LIST = 'vm_list'
+    MSG_CONNECTED = 'connected'
 
     server = None
 
     def get_handler(self, action):
         handlers = {
-            'refreshVMList': self.refresh_vm_list_handler,
-            'Connect': self.connect,
+            self.ACTION_REFRESH_VM_LIST: self.refresh_vm_list_handler,
+            self.ACTION_CONNECT: self.connect,
         }
         return handlers[action]
 
@@ -142,7 +145,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         TaskStatusHandler.update_task(task_id, 'VM list fetched...')
 
         message_dict = {
-            'action': ActionHandler.ACTION_VM_LIST,
+            'message': self.MSG_VM_LIST,
             'vm_list': vm_list,
         }
         message_json = json.dumps(message_dict)
@@ -163,7 +166,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         self.server.connect(vCenterHost, vCenterUsername, vCenterPassword)
 
         message_dict = {
-            'action': ActionHandler.ACTION_CONNECT,
+            'message': self.MSG_CONNECTED,
             'vCenter': vCenterHost
         }
         self.write_message(json.dumps(message_dict))

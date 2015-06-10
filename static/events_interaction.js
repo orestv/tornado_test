@@ -27,7 +27,7 @@ define(function(require){
         },
         connectHandler: function(vCenterConnectionInfo) {
             var messageDict = {
-                action: 'Connect',
+                action: 'connect',
                 parameters: vCenterConnectionInfo
             };
             wsInteract.send(JSON.stringify(messageDict));
@@ -51,7 +51,7 @@ define(function(require){
         },
         refreshHandler: function () {
             var messageDict = {
-                'action': 'refreshVMList'
+                'action': 'refresh_vm_list'
             };
             var messageJSON = JSON.stringify(messageDict);
             wsInteract.send(messageJSON);
@@ -61,11 +61,11 @@ define(function(require){
     var wsInteract = new WebSocket('ws://' + window.location.host + '/interact.ws');
     wsInteract.onmessage = function(evt) {
         var data = JSON.parse(evt.data);
-        switch(data.action) {
-            case 'VMList':
+        switch(data.message) {
+            case 'vm_list':
                 reloadVMListAction(data.vm_list);
                 break;
-            case 'Connect':
+            case 'connected':
                 connectedAction(data.vCenter);
                 break;
         }
