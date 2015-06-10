@@ -4,6 +4,7 @@ import json
 import re
 import time
 import uuid
+from pysphere.resources.vi_exception import VIException
 
 import tornado
 import tornado.gen
@@ -112,6 +113,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
 
     MSG_VM_LIST = 'vm_list'
     MSG_CONNECTED = 'connected'
+    MSG_DISCONNECTED = 'disconnected'
 
     server = None
 
@@ -144,12 +146,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         vm_list = yield self.application.executor.submit(self.get_vm_list)
         TaskStatusHandler.update_task(task_id, 'VM list fetched...')
 
-        message_dict = {
-            'message': self.MSG_VM_LIST,
-            'vm_list': vm_list,
-        }
-        message_json = json.dumps(message_dict)
-        self.write_message(message_json)
+        self.send_typed_message(self.MSG_VM_LIST, vm_list=vm_list)
 
         TaskStatusHandler.update_task(task_id, 'Finished')
 
@@ -162,12 +159,19 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         vCenterPassword = parameters['password']
 
         TaskStatusHandler.update_task(task_id, 'Connecting to vCenter {0}'.format(vCenterHost))
-        self.server = pysphere.VIServer()
-        self.server.connect(vCenterHost, vCenterUsername, vCenterPassword)
+        try:
+            self.server = pysphere.VIServer()
+            self.server.connect(vCenterHost, vCenterUsername, vCenterPassword)
+        except VIException as e:
+            self.send_typed_message(self.MSG_DISCONNECTED)
+            raise
 
+        self.send_typed_message(self.MSG_CONNECTED, vCenter=vCenterHost)
+
+    def send_typed_message(self, message_type, **parameters):
         message_dict = {
-            'message': self.MSG_CONNECTED,
-            'vCenter': vCenterHost
+            'message': message_type,
+            'parameters': parameters,
         }
         self.write_message(json.dumps(message_dict))
 

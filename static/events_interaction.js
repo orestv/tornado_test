@@ -63,10 +63,13 @@ define(function(require){
         var data = JSON.parse(evt.data);
         switch(data.message) {
             case 'vm_list':
-                reloadVMListAction(data.vm_list);
+                reloadVMListAction(data.parameters.vm_list);
                 break;
             case 'connected':
-                connectedAction(data.vCenter);
+                connectedAction(data.parameters.vCenter);
+                break;
+            case 'disconnected':
+                disconnectedAction();
                 break;
         }
     };
