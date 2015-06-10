@@ -31,7 +31,7 @@ define(function(require) {
         },
         connectionStateChanged: function(connectionState) {
             var state = {
-                enabled: connectionState.connected || connectionState.connecting
+                enabled: !(connectionState.connected || connectionState.connecting)
             };
             this.setState(state);
         },

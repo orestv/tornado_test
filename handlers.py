@@ -1,10 +1,10 @@
+import concurrent.futures.thread
 import datetime
 import functools
 import json
 import re
 import time
 import uuid
-from pysphere.resources.vi_exception import VIException
 
 import tornado
 import tornado.gen
@@ -12,6 +12,7 @@ import tornado.web
 import tornado.websocket
 
 import pysphere
+from pysphere.resources.vi_exception import VIException
 
 
 class HelloHandler(tornado.web.RequestHandler):
@@ -20,10 +21,14 @@ class HelloHandler(tornado.web.RequestHandler):
 
 
 class TaskStatusHandler(tornado.websocket.WebSocketHandler):
+    TASK_LIFE = 15
     _tasks = {}
     _clients = []
 
+    _executor = concurrent.futures.thread.ThreadPoolExecutor(2)
+
     ACTION_UPDATE = 'UPDATE'
+    ACTION_LIST = 'LIST'
 
     @staticmethod
     def add_task(name, status):
@@ -56,6 +61,24 @@ class TaskStatusHandler(tornado.websocket.WebSocketHandler):
         TaskStatusHandler.send_all_clients(message_dict)
 
     @staticmethod
+    def push_task_list():
+        message_dict = {
+            'action': TaskStatusHandler.ACTION_LIST,
+            'tasks': TaskStatusHandler.tasks(),
+        }
+        TaskStatusHandler.send_all_clients(message_dict)
+
+    @staticmethod
+    def delete_task(task_id):
+        TaskStatusHandler._executor.submit(TaskStatusHandler._delete_task, task_id)
+
+    @staticmethod
+    def _delete_task(task_id):
+        del TaskStatusHandler.tasks()[task_id]
+        time.sleep(TaskStatusHandler.TASK_LIFE)
+        TaskStatusHandler.push_task_list()
+
+    @staticmethod
     def tasks():
         return TaskStatusHandler._tasks
 
@@ -73,14 +96,9 @@ class TaskStatusHandler(tornado.websocket.WebSocketHandler):
         TaskStatusHandler.clients().remove(self)
 
     def open(self, *args, **kwargs):
-        message_dict = {
-            'action': 'LIST',
-            'tasks': TaskStatusHandler.tasks(),
-        }
-        message_json = json.dumps(message_dict)
-        self.write_message(message_json)
-
         TaskStatusHandler.clients().append(self)
+
+        TaskStatusHandler.push_task_list()
 
     def on_message(self, message):
         pass
@@ -98,9 +116,11 @@ def task(task_name, initial_status, final_status=None):
                 result = func(*args, **kwargs)
                 if final_status:
                     TaskStatusHandler.update_task(task_id, final_status)
+                    TaskStatusHandler.delete_task(task_id)
                 return result
             except Exception as e:
                 TaskStatusHandler.update_task(task_id, 'Exception: {0}'.format(e.message))
+                TaskStatusHandler.delete_task(task_id)
 
         return wrapper
 
@@ -149,6 +169,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         self.send_typed_message(self.MSG_VM_LIST, vm_list=vm_list)
 
         TaskStatusHandler.update_task(task_id, 'Finished')
+        TaskStatusHandler.delete_task(task_id)
 
         raise tornado.gen.Return()
 
