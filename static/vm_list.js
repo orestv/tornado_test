@@ -25,7 +25,7 @@ define(function (require) {
         },
         render: function () {
             return (
-                React.createElement("table", {className: "table"}, 
+                React.createElement("table", {className: "table table-hover"}, 
                     React.createElement("thead", null, 
                     React.createElement("tr", null, 
                         React.createElement("th", null, "Name"), 
@@ -46,11 +46,20 @@ define(function (require) {
     });
 
     var VMRow = React.createClass({displayName: "VMRow",
+        mixins: [Reflux.ListenerMixin],
+        componentDidMount: function () {
+            this.vm = this.props.vm;
+        },
         render: function () {
+            var vm_name = this.props.vm.name;
+
+            var currentSnapshotId = this.props.vm.current_snapshot;
+            var currentSnapshotName = currentSnapshotId ? this.props.vm.snapshots[currentSnapshotId] : null;
+
             return (
                 React.createElement("tr", null, 
-                    React.createElement("td", null, this.props.vm.name), 
-                    React.createElement("td", null, this.props.vm.currentSnapshotName), 
+                    React.createElement("td", null, vm_name), 
+                    React.createElement("td", null, currentSnapshotName), 
                     React.createElement("td", null, React.createElement(VMActions, {vm: this.props.vm}))
                 )
             )
@@ -75,7 +84,7 @@ define(function (require) {
         render: function () {
             return (
                 React.createElement("div", null, 
-                    React.createElement("button", {className: "button", onClick: this.btnRefreshSnapshotsClick}, 
+                    React.createElement("button", {className: "btn", onClick: this.btnRefreshSnapshotsClick}, 
                         React.createElement("span", {className: "glyphicon glyphicon-refresh"}), " Load Snapshots"
                     )
                 )

@@ -25,7 +25,7 @@ define(function (require) {
         },
         render: function () {
             return (
-                <table className="table">
+                <table className="table table-hover">
                     <thead>
                     <tr>
                         <th>Name</th>
@@ -46,11 +46,20 @@ define(function (require) {
     });
 
     var VMRow = React.createClass({
+        mixins: [Reflux.ListenerMixin],
+        componentDidMount: function () {
+            this.vm = this.props.vm;
+        },
         render: function () {
+            var vm_name = this.props.vm.name;
+
+            var currentSnapshotId = this.props.vm.current_snapshot;
+            var currentSnapshotName = currentSnapshotId ? this.props.vm.snapshots[currentSnapshotId] : null;
+
             return (
                 <tr>
-                    <td>{this.props.vm.name}</td>
-                    <td>{this.props.vm.currentSnapshotName}</td>
+                    <td>{vm_name}</td>
+                    <td>{currentSnapshotName}</td>
                     <td><VMActions vm={this.props.vm}/></td>
                 </tr>
             )
@@ -75,7 +84,7 @@ define(function (require) {
         render: function () {
             return (
                 <div>
-                    <button className="button" onClick={this.btnRefreshSnapshotsClick}>
+                    <button className="btn" onClick={this.btnRefreshSnapshotsClick}>
                         <span className="glyphicon glyphicon-refresh"></span> Load Snapshots
                     </button>
                 </div>

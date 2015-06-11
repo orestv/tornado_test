@@ -22,6 +22,7 @@ define(function(require){
 
     var fetchSnapshotsAction = Reflux.createAction();
     var snapshotsFetchedAction = Reflux.createAction();
+    var currentSnapshotFetchedAction = Reflux.createAction();
 
     var ConnectionStore = Reflux.createStore({
         init: function() {
@@ -51,6 +52,7 @@ define(function(require){
             this.vmState = {};
             this.listenTo(snapshotsFetchedAction, this.snapshotsFetched);
             this.listenTo(fetchSnapshotsAction, this.fetchSnapshots);
+            this.listenTo(currentSnapshotFetchedAction, this.currentSnapshotFetched);
         },
         fetchSnapshots: function(vmId) {
             var messageDict = {
@@ -66,6 +68,12 @@ define(function(require){
             if (!(vmId in this.vmState))
                 this.vmState[vmId] = {};
             this.vmState[vmId].snapshot_list = vmSnapshots.snapshot_list;
+            this.trigger(this.vmState, vmId);
+        },
+        currentSnapshotFetched: function(snapshotName, vmId) {
+            if (!(vmId in this.vmState))
+                this.vmState[vmId] = {};
+            this.vmState[vmId].currentSnapshotName = snapshotName;
             this.trigger(this.vmState, vmId);
         }
     });
@@ -102,7 +110,7 @@ define(function(require){
                 break;
             case 'snapshot_list':
                 snapshotsFetchedAction(data.parameters);
-                break
+                break;
         }
     };
     wsInteract.onclose = function() {

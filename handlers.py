@@ -5,7 +5,6 @@ import json
 import re
 import time
 import uuid
-from pysphere.vi_virtual_machine import VIVirtualMachine
 
 import tornado
 import tornado.gen
@@ -13,6 +12,7 @@ import tornado.web
 import tornado.websocket
 
 import pysphere
+from pysphere.vi_mor import MORTypes
 from pysphere.resources.vi_exception import VIException
 
 
@@ -135,6 +135,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
 
     MSG_VM_LIST = 'vm_list'
     MSG_SNAPSHOT_LIST = 'snapshot_list'
+    MSG_CURRENT_SNAPSHOT = 'current_snapshot'
 
     MSG_CONNECTED = 'connected'
     MSG_DISCONNECTED = 'disconnected'
@@ -149,18 +150,66 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         }
         return handlers[action]
 
+    @staticmethod
+    def build_snapshot_dict(children_snapshots, snapshot_dict=None):
+        if not snapshot_dict:
+            snapshot_dict = {}
+
+        for snapshot in children_snapshots:
+            snapshot_dict[snapshot.Snapshot] = snapshot
+            children = None
+            try:
+                children = snapshot.ChildSnapshotList
+            except AttributeError:
+                pass
+            if children:
+                ActionHandler.build_snapshot_dict(children, snapshot_dict)
+
+        return snapshot_dict
+
     def get_vm_list(self):
-        vms = self.server.get_registered_vms()
-        vm_regexp = re.compile('(?P<datastore>\[.*\]) (?P<name>.*)/(?P<path>.*)')
+        vm_dict = self.server._get_managed_objects(MORTypes.VirtualMachine, from_mor=None)
+
+        #
+        vm_mor_list = vm_dict.keys()
+        props = self.server._get_object_properties_bulk(vm_mor_list, {
+            MORTypes.VirtualMachine: ['name', 'snapshot', 'snapshot.currentSnapshot']})
+
+        vms_with_snapshots = props
+
         result_list = []
-        for vm in vms:
-            match = re.match(vm_regexp, vm)
-            result_list.append({
-                'datastore': match.group('datastore'),
-                'id': match.group('path'),
-                'name': match.group('name'),
-                'path': match.group('path'),
-            })
+
+        for vm_mor in vms_with_snapshots:
+
+            snapshotProp = None
+            vm_name = None
+            for prop in vm_mor.PropSet:
+                if prop.Name == 'snapshot':
+                    snapshotProp = prop
+                elif prop.Name == 'name':
+                    vm_name = prop.Val
+
+            vm_dict = {
+                'id': vm_mor.Obj,
+                'name': vm_name,
+                'current_snapshot': None,
+                'snapshots': None,
+            }
+
+            if snapshotProp:
+                snapshot_dict = ActionHandler.build_snapshot_dict(snapshotProp.Val.RootSnapshotList)
+                vm_dict.update({
+                    'snapshots': {
+                        snapshot.Snapshot: {
+                            'name': snapshot.Name,
+                            'description': snapshot.Description,
+                        }
+                        for snapshot_id, snapshot in snapshot_dict.iteritems()
+                    },
+                    'current_snapshot': snapshotProp.Val.CurrentSnapshot,
+                })
+
+            result_list.append(vm_dict)
 
         return result_list
 
