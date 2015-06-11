@@ -50,16 +50,32 @@ define(function (require) {
         componentDidMount: function () {
             this.vm = this.props.vm;
         },
+        revertToCurrentSnapshot: function() {
+            var vmName = this.props.vm.name;
+            var currentSnapshotId = this.props.vm.current_snapshot;
+            var snapshotName = this.props.vm.snapshots[currentSnapshotId].name;
+
+            if (confirm('Are you sure you want to revert ' + vmName + ' to snapshot ' + snapshotName + '?'))
+                EventsInteraction.actions.revertToSnapshotAction(this.props.vm.id, currentSnapshotId);
+        },
         render: function () {
             var vm_name = this.props.vm.name;
 
             var currentSnapshotId = this.props.vm.current_snapshot;
-            var currentSnapshotName = currentSnapshotId ? this.props.vm.snapshots[currentSnapshotId] : null;
+            var currentSnapshotName = currentSnapshotId ? this.props.vm.snapshots[currentSnapshotId].name : null;
 
             return (
                 React.createElement("tr", null, 
                     React.createElement("td", null, vm_name), 
-                    React.createElement("td", null, currentSnapshotName), 
+                    React.createElement("td", null, 
+                        currentSnapshotName ? (
+                            React.createElement("button", {className: "btn btn-default", onClick: this.revertToCurrentSnapshot}, 
+                                "Revert"
+                            )
+                        ) : null, 
+                        " ", 
+                        currentSnapshotName
+                    ), 
                     React.createElement("td", null, React.createElement(VMActions, {vm: this.props.vm}))
                 )
             )
@@ -77,16 +93,10 @@ define(function (require) {
             var thisVmState = vmState[vmId];
             console.log(thisVmState);
         },
-        btnRefreshSnapshotsClick: function() {
-            EventsInteraction.actions.fetchSnapshotsAction(this.props.vm.name);
-
-        },
         render: function () {
             return (
-                React.createElement("div", null, 
-                    React.createElement("button", {className: "btn", onClick: this.btnRefreshSnapshotsClick}, 
-                        React.createElement("span", {className: "glyphicon glyphicon-refresh"}), " Load Snapshots"
-                    )
+                React.createElement("div", null
+
                 )
             )
         }

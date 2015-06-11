@@ -23,6 +23,7 @@ define(function(require){
     var fetchSnapshotsAction = Reflux.createAction();
     var snapshotsFetchedAction = Reflux.createAction();
     var currentSnapshotFetchedAction = Reflux.createAction();
+    var revertToSnapshotAction = Reflux.createAction();
 
     var ConnectionStore = Reflux.createStore({
         init: function() {
@@ -82,6 +83,7 @@ define(function(require){
         init: function() {
             this.listenTo(reloadVMListAction, this.reloadHandler);
             this.listenTo(fetchVMListAction, this.refreshHandler);
+            this.listenTo(revertToSnapshotAction, this.revertToSnapshotHandler);
         },
         reloadHandler: function(vmList) {
             this.trigger(vmList);
@@ -92,6 +94,16 @@ define(function(require){
             };
             var messageJSON = JSON.stringify(messageDict);
             wsInteract.send(messageJSON);
+        },
+        revertToSnapshotHandler: function(vm_id, snapshot_id) {
+            var messageDict = {
+                action: 'revert_to_snapshot',
+                parameters: {
+                    vm_id: vm_id,
+                    snapshot_id: snapshot_id
+                }
+            };
+            wsInteract.send(JSON.stringify(messageDict))
         }
     });
 
@@ -125,7 +137,8 @@ define(function(require){
             connectAction: connectAction,
             disconnectedAction: disconnectedAction,
             fetchSnapshotsAction: fetchSnapshotsAction,
-            snapshotsFetchedAction: snapshotsFetchedAction
+            snapshotsFetchedAction: snapshotsFetchedAction,
+            revertToSnapshotAction: revertToSnapshotAction
         },
         stores: {
             VMListStore: VMListStore,

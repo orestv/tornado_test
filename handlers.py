@@ -12,8 +12,10 @@ import tornado.web
 import tornado.websocket
 
 import pysphere
-from pysphere.vi_mor import MORTypes
-from pysphere.resources.vi_exception import VIException
+from pysphere.resources import VimService_services as VI
+from pysphere.vi_mor import MORTypes, VIMor
+from pysphere.resources.vi_exception import VIException, FaultTypes
+from pysphere.vi_task import VITask
 
 
 class HelloHandler(tornado.web.RequestHandler):
@@ -132,6 +134,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
     ACTION_REFRESH_VM_LIST = 'refresh_vm_list'
     ACTION_CONNECT = 'connect'
     ACTION_FETCH_SNAPSHOTS = 'fetch_snapshots'
+    ACTION_REVERT_TO_SNAPSHOT = 'revert_to_snapshot'
 
     MSG_VM_LIST = 'vm_list'
     MSG_SNAPSHOT_LIST = 'snapshot_list'
@@ -147,6 +150,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
             self.ACTION_REFRESH_VM_LIST: self.refresh_vm_list_handler,
             self.ACTION_CONNECT: self.connect,
             self.ACTION_FETCH_SNAPSHOTS: self.get_snapshots,
+            self.ACTION_REVERT_TO_SNAPSHOT: self.revert_to_snapshot,
         }
         return handlers[action]
 
@@ -212,6 +216,37 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
             result_list.append(vm_dict)
 
         return result_list
+
+    @tornado.gen.coroutine
+    @task('Revert to snapshot', 'Started...')
+    def revert_to_snapshot(self, task_id, parameters):
+        vm_id = parameters['vm_id']
+        snapshot_id = parameters['snapshot_id']
+
+        snapshot_mor = VIMor(snapshot_id, MORTypes.VirtualMachineSnapshot)
+
+        request = VI.RevertToSnapshot_TaskRequestMsg()
+
+        mor_snap = request.new__this(snapshot_mor)
+        mor_snap.set_attribute_type(snapshot_mor.get_attribute_type())
+        request.set_element__this(mor_snap)
+
+        TaskStatusHandler.update_task(task_id, 'Reverting...')
+
+        vi_task = self.server._proxy.RevertToSnapshot_Task(request)._returnval
+
+        TaskStatusHandler.update_task(task_id, 'Starting background task...')
+
+        vi_task = VITask(vi_task, self.server)
+        status = yield self.application.executor.submit(
+            vi_task.wait_for_state, [vi_task.STATE_SUCCESS,
+                                     vi_task.STATE_ERROR])
+        if status == vi_task.STATE_ERROR:
+            raise VIException(vi_task.get_error_message(),
+                              FaultTypes.TASK_ERROR)
+
+        TaskStatusHandler.update_task(task_id, 'Reverted successfully')
+        TaskStatusHandler.delete_task(task_id)
 
     @tornado.gen.coroutine
     @task('Snapshots fetch', 'Started...')

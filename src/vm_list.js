@@ -50,16 +50,32 @@ define(function (require) {
         componentDidMount: function () {
             this.vm = this.props.vm;
         },
+        revertToCurrentSnapshot: function() {
+            var vmName = this.props.vm.name;
+            var currentSnapshotId = this.props.vm.current_snapshot;
+            var snapshotName = this.props.vm.snapshots[currentSnapshotId].name;
+
+            if (confirm('Are you sure you want to revert ' + vmName + ' to snapshot ' + snapshotName + '?'))
+                EventsInteraction.actions.revertToSnapshotAction(this.props.vm.id, currentSnapshotId);
+        },
         render: function () {
             var vm_name = this.props.vm.name;
 
             var currentSnapshotId = this.props.vm.current_snapshot;
-            var currentSnapshotName = currentSnapshotId ? this.props.vm.snapshots[currentSnapshotId] : null;
+            var currentSnapshotName = currentSnapshotId ? this.props.vm.snapshots[currentSnapshotId].name : null;
 
             return (
                 <tr>
                     <td>{vm_name}</td>
-                    <td>{currentSnapshotName}</td>
+                    <td>
+                        {currentSnapshotName ? (
+                            <button className="btn btn-default" onClick={this.revertToCurrentSnapshot}>
+                                Revert
+                            </button>
+                        ) : null}
+                        &nbsp;
+                        {currentSnapshotName}
+                    </td>
                     <td><VMActions vm={this.props.vm}/></td>
                 </tr>
             )
@@ -77,16 +93,10 @@ define(function (require) {
             var thisVmState = vmState[vmId];
             console.log(thisVmState);
         },
-        btnRefreshSnapshotsClick: function() {
-            EventsInteraction.actions.fetchSnapshotsAction(this.props.vm.name);
-
-        },
         render: function () {
             return (
                 <div>
-                    <button className="btn" onClick={this.btnRefreshSnapshotsClick}>
-                        <span className="glyphicon glyphicon-refresh"></span> Load Snapshots
-                    </button>
+
                 </div>
             )
         }
