@@ -215,6 +215,8 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
 
             result_list.append(vm_dict)
 
+        result_list.sort(key=lambda vm: vm['name'])
+
         return result_list
 
     @tornado.gen.coroutine
