@@ -76,7 +76,10 @@ define(function (require) {
                         &nbsp;
                         {currentSnapshotName}
                     </td>
-                    <td><VMActions vm={this.props.vm}/></td>
+                    <td>
+                        <VMActions vm={this.props.vm}/>
+
+                    </td>
                 </tr>
             )
         }

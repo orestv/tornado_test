@@ -76,7 +76,10 @@ define(function (require) {
                         " ", 
                         currentSnapshotName
                     ), 
-                    React.createElement("td", null, React.createElement(VMActions, {vm: this.props.vm}))
+                    React.createElement("td", null, 
+                        React.createElement(VMActions, {vm: this.props.vm})
+
+                    )
                 )
             )
         }

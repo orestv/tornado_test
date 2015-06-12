@@ -145,6 +145,15 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
 
     server = None
 
+    _clients = []
+
+    def __init__(self, application, request, **kwargs):
+        super(ActionHandler, self).__init__(application, request, **kwargs)
+        self.vsphere_host = None
+        self.vsphere_password = None
+        self.vsphere_username = None
+        self.server = pysphere.VIServer()
+
     def get_handler(self, action):
         handlers = {
             self.ACTION_REFRESH_VM_LIST: self.refresh_vm_list_handler,
@@ -153,6 +162,13 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
             self.ACTION_REVERT_TO_SNAPSHOT: self.revert_to_snapshot,
         }
         return handlers[action]
+
+    @staticmethod
+    def clients():
+        return ActionHandler._clients
+
+    def send_keepalive(self):
+        self.server.keep_session_alive()
 
     @staticmethod
     def build_snapshot_dict(children_snapshots, snapshot_dict=None):
@@ -293,9 +309,12 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         vCenterUsername = parameters['username']
         vCenterPassword = parameters['password']
 
+        self.vsphere_host = vCenterHost
+        self.vsphere_username = vCenterUsername
+        self.vsphere_password = vCenterPassword
+
         TaskStatusHandler.update_task(task_id, 'Connecting to vCenter {0}'.format(vCenterHost))
         try:
-            self.server = pysphere.VIServer()
             self.server.connect(vCenterHost, vCenterUsername, vCenterPassword)
         except VIException as e:
             self.send_typed_message(self.MSG_DISCONNECTED)
@@ -320,3 +339,10 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         except Exception as e:
             pass
 
+    def open(self, *args, **kwargs):
+        ActionHandler._clients.append(self)
+
+    def on_close(self):
+        if self.server and self.server.is_connected():
+            self.server.disconnect()
+        ActionHandler._clients.remove(self)

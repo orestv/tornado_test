@@ -1,4 +1,6 @@
 import os
+import time
+import threading
 import concurrent.futures.thread
 
 import tornado
@@ -12,7 +14,22 @@ ROOT = os.path.curdir
 
 
 class Application(tornado.web.Application):
+    VSPHERE_KEEPALIVE_TIMEOUT = 15
+
     _executor = concurrent.futures.thread.ThreadPoolExecutor(8)
+
+    def __init__(self, handlers=None, default_host="", transforms=None, **settings):
+        super(Application, self).__init__(handlers, default_host, transforms, **settings)
+
+        keepalive_thread = threading.Thread(target=Application.vsphere_send_keepalives)
+        keepalive_thread.start()
+
+    @staticmethod
+    def vsphere_send_keepalives():
+        while True:
+            time.sleep(Application.VSPHERE_KEEPALIVE_TIMEOUT)
+            for client in handlers.ActionHandler.clients():
+                client.send_keepalive()
 
     @property
     def executor(self):
