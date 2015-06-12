@@ -22,6 +22,7 @@ class Application(tornado.web.Application):
         super(Application, self).__init__(handlers, default_host, transforms, **settings)
 
         keepalive_thread = threading.Thread(target=Application.vsphere_send_keepalives)
+        keepalive_thread.daemon = True
         keepalive_thread.start()
 
     @staticmethod

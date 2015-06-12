@@ -168,7 +168,8 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         return ActionHandler._clients
 
     def send_keepalive(self):
-        self.server.keep_session_alive()
+        if self.server.is_connected():
+            self.server.keep_session_alive()
 
     @staticmethod
     def build_snapshot_dict(children_snapshots, snapshot_dict=None):
@@ -241,7 +242,10 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         vm_id = parameters['vm_id']
         snapshot_id = parameters['snapshot_id']
 
+        vm_mor = VIMor(vm_id, MORTypes.VirtualMachine)
         snapshot_mor = VIMor(snapshot_id, MORTypes.VirtualMachineSnapshot)
+
+        vm_properties_future = self.application.executor.submit(self.server._get_object_properties, vm_mor, ['name', 'snapshot'])
 
         request = VI.RevertToSnapshot_TaskRequestMsg()
 
@@ -249,11 +253,19 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         mor_snap.set_attribute_type(snapshot_mor.get_attribute_type())
         request.set_element__this(mor_snap)
 
-        TaskStatusHandler.update_task(task_id, 'Reverting...')
+        vm_name = None
+        snapshot_name = None
+        vm_properties = yield vm_properties_future
+        for prop in vm_properties.PropSet:
+            if prop.Name == 'name':
+                vm_name = prop.Val
+            elif prop.Name == 'snapshot':
+                snapshot_dict = ActionHandler.build_snapshot_dict(prop.Val.RootSnapshotList)
+                snapshot_name = snapshot_dict[snapshot_mor].Name
+
+        TaskStatusHandler.update_task(task_id, 'Reverting {0} to {1}...'.format(vm_name, snapshot_name))
 
         vi_task = self.server._proxy.RevertToSnapshot_Task(request)._returnval
-
-        TaskStatusHandler.update_task(task_id, 'Starting background task...')
 
         vi_task = VITask(vi_task, self.server)
         status = yield self.application.executor.submit(
@@ -263,7 +275,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
             raise VIException(vi_task.get_error_message(),
                               FaultTypes.TASK_ERROR)
 
-        TaskStatusHandler.update_task(task_id, 'Reverted successfully')
+        TaskStatusHandler.update_task(task_id, 'Successfully reverted {0} to {1}'.format(vm_name, snapshot_name))
         TaskStatusHandler.delete_task(task_id)
 
     @tornado.gen.coroutine
