@@ -25,27 +25,29 @@ define(function (require) {
         },
         render: function () {
             return (
-                React.createElement("table", {className: "table table-hover"}, 
-                    React.createElement("thead", null, 
-                    React.createElement("tr", null, 
-                        React.createElement("th", null, 
-                            React.createElement(VMFilterForm, null)
+                React.createElement("div", {className: "table-responsive"}, 
+                    React.createElement("table", {className: "table table-hover"}, 
+                        React.createElement("thead", null, 
+                        React.createElement("tr", null, 
+                            React.createElement("th", null, 
+                                React.createElement(VMFilterForm, null)
+                            ), 
+                            React.createElement("th", null), 
+                            React.createElement("th", null)
                         ), 
-                        React.createElement("th", null), 
-                        React.createElement("th", null)
-                    ), 
-                    React.createElement("tr", null, 
-                        React.createElement("th", null, "Name"), 
-                        React.createElement("th", null, "Current Snapshot"), 
-                        React.createElement("th", null, "Actions")
-                    )
-                    ), 
-                    React.createElement("tbody", null, 
-                    this.state.vms.map(function (vm) {
-                        return (
-                            React.createElement(VMRow, {key: vm.id, vm: vm})
+                        React.createElement("tr", null, 
+                            React.createElement("th", null, "Name"), 
+                            React.createElement("th", null, "Current Snapshot"), 
+                            React.createElement("th", null, "Actions")
                         )
-                    })
+                        ), 
+                        React.createElement("tbody", null, 
+                        this.state.vms.map(function (vm) {
+                            return (
+                                React.createElement(VMRow, {key: vm.id, vm: vm})
+                            )
+                        })
+                        )
                     )
                 )
             );

@@ -25,29 +25,31 @@ define(function (require) {
         },
         render: function () {
             return (
-                <table className="table table-hover">
-                    <thead>
-                    <tr>
-                        <th>
-                            <VMFilterForm/>
-                        </th>
-                        <th></th>
-                        <th></th>
-                    </tr>
-                    <tr>
-                        <th>Name</th>
-                        <th>Current Snapshot</th>
-                        <th>Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    {this.state.vms.map(function (vm) {
-                        return (
-                            <VMRow key={vm.id} vm={vm}/>
-                        )
-                    })}
-                    </tbody>
-                </table>
+                <div className="table-responsive">
+                    <table className="table table-hover">
+                        <thead>
+                        <tr>
+                            <th>
+                                <VMFilterForm/>
+                            </th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                        <tr>
+                            <th>Name</th>
+                            <th>Current Snapshot</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {this.state.vms.map(function (vm) {
+                            return (
+                                <VMRow key={vm.id} vm={vm}/>
+                            )
+                        })}
+                        </tbody>
+                    </table>
+                </div>
             );
         }
     });
