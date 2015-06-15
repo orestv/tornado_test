@@ -19,35 +19,29 @@ requirejs.config({
     }
 });
 
+require(['jquery'], function($) {
+    require([
+        'reflux',
+        'react',
+        'bootstrap',
+        'navbar',
+        'statusbar',
+        'vm_list'
+    ], function (reflux, React, bootstrap,
+                 NavBar, StatusBar, VMList) {
+        React.render(
+            React.createElement(VMList),
+            document.getElementById('vmList')
+        );
 
-require([
-    'jquery',
-    'reflux',
-    'react',
-    'bootstrap',
-    'navbar',
-    'statusbar',
-    'vm_list',
-    'events_interaction',
-    'events_statusbar'
-], function($, reflux, React, bootstrap,
-            NavBar, StatusBar, VMList,
-            events_interaction, events_statusbar) {
+        React.render(
+            React.createElement(StatusBar),
+            document.getElementById('statusbar')
+        );
 
-    React.render(
-        React.createElement(VMList),
-        document.getElementById('vmList')
-    );
-
-    React.render(
-        React.createElement(StatusBar),
-        document.getElementById('statusbar')
-    );
-
-    React.render(
-        React.createElement(NavBar),
-        document.getElementById('navbar')
-    )
-
+        React.render(
+            React.createElement(NavBar),
+            document.getElementById('navbar')
+        )
+    });
 });
-
