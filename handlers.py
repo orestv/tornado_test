@@ -122,7 +122,7 @@ def task(task_name, initial_status, final_status=None):
                     TaskStatusHandler.delete_task(task_id)
                 return result
             except Exception as e:
-                TaskStatusHandler.update_task(task_id, 'Exception: {0}'.format(e.message))
+                TaskStatusHandler.update_task(task_id, 'Exception: {0}'.format(e))
                 TaskStatusHandler.delete_task(task_id)
 
         return wrapper
@@ -314,7 +314,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         TaskStatusHandler.update_task(task_id, 'Connecting to vCenter {0}'.format(vCenterHost))
         try:
             self.server.connect(vCenterHost, vCenterUsername, vCenterPassword)
-        except VIException as e:
+        except Exception as e:
             self.send_typed_message(self.MSG_DISCONNECTED)
             raise
 
