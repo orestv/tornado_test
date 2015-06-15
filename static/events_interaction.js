@@ -14,7 +14,8 @@ define(function(require){
     var Reflux = require('reflux');
 
     var fetchVMListAction = Reflux.createAction();
-    var reloadVMListAction = Reflux.createAction();
+    var VMListFetchedAction = Reflux.createAction();
+    var VMFetchedAction = Reflux.createAction();
 
     var connectAction = Reflux.createAction();
     var connectedAction = Reflux.createAction();
@@ -81,14 +82,27 @@ define(function(require){
 
     var VMListStore = Reflux.createStore({
         init: function() {
-            this.listenTo(reloadVMListAction, this.reloadHandler);
-            this.listenTo(fetchVMListAction, this.refreshHandler);
+            this.listenTo(VMListFetchedAction, this.vmListUpdatedHandler);
+            this.listenTo(fetchVMListAction, this.fetchVMListHandler);
             this.listenTo(revertToSnapshotAction, this.revertToSnapshotHandler);
+            this.listenTo(VMFetchedAction, this.vmUpdatedHandler);
+            this.vmList = [];
         },
-        reloadHandler: function(vmList) {
-            this.trigger(vmList);
+        vmListUpdatedHandler: function(vmList) {
+            this.vmList = vmList;
+            this.trigger(this.vmList);
         },
-        refreshHandler: function () {
+        vmUpdatedHandler: function(updatedVm) {
+            for (var i = 0; i < this.vmList.length; i++) {
+                if (vm.id == updatedVm.id){
+                    this.vmList[i] = updatedVm;
+                    console.log('Updating VM ' + updatedVm.id);
+                    this.trigger(this.vmList);
+                    break;
+                }
+            }
+        },
+        fetchVMListHandler: function () {
             var messageDict = {
                 'action': 'refresh_vm_list'
             };
@@ -112,7 +126,7 @@ define(function(require){
         var data = JSON.parse(evt.data);
         switch(data.message) {
             case 'vm_list':
-                reloadVMListAction(data.parameters.vm_list);
+                VMListFetchedAction(data.parameters.vm_list);
                 break;
             case 'connected':
                 connectedAction(data.parameters.vCenter);
@@ -132,7 +146,7 @@ define(function(require){
     return {
         actions: {
             fetchVMListAction: fetchVMListAction,
-            reloadVMListAction: reloadVMListAction,
+            VMListFetchedAction: VMListFetchedAction,
             connectedAction: connectedAction,
             connectAction: connectAction,
             disconnectedAction: disconnectedAction,

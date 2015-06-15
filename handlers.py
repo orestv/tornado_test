@@ -137,6 +137,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
     ACTION_REVERT_TO_SNAPSHOT = 'revert_to_snapshot'
 
     MSG_VM_LIST = 'vm_list'
+    MSG_VM = 'vm'
     MSG_SNAPSHOT_LIST = 'snapshot_list'
     MSG_CURRENT_SNAPSHOT = 'current_snapshot'
 
@@ -156,10 +157,9 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
 
     def get_handler(self, action):
         handlers = {
-            self.ACTION_REFRESH_VM_LIST: self.refresh_vm_list_handler,
+            self.ACTION_REFRESH_VM_LIST: self.handler_refresh_vm_list,
             self.ACTION_CONNECT: self.connect,
-            self.ACTION_FETCH_SNAPSHOTS: self.get_snapshots,
-            self.ACTION_REVERT_TO_SNAPSHOT: self.revert_to_snapshot,
+            self.ACTION_REVERT_TO_SNAPSHOT: self.handler_revert_to_snapshot,
         }
         return handlers[action]
 
@@ -190,9 +190,10 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
 
     def get_vm_list(self):
         vm_dict = self.server._get_managed_objects(MORTypes.VirtualMachine, from_mor=None)
-
-        #
         vm_mor_list = vm_dict.keys()
+        return self._get_vm_list(vm_mor_list)
+
+    def _get_vm_list(self, vm_mor_list):
         props = self.server._get_object_properties_bulk(vm_mor_list, {
             MORTypes.VirtualMachine: ['name', 'snapshot', 'snapshot.currentSnapshot']})
 
@@ -226,7 +227,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
                             'description': snapshot.Description,
                         }
                         for snapshot_id, snapshot in snapshot_dict.iteritems()
-                    },
+                        },
                     'current_snapshot': snapshotProp.Val.CurrentSnapshot,
                 })
 
@@ -238,7 +239,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
 
     @tornado.gen.coroutine
     @task('Revert to snapshot', 'Started...')
-    def revert_to_snapshot(self, task_id, parameters):
+    def handler_revert_to_snapshot(self, task_id, parameters):
         vm_id = parameters['vm_id']
         snapshot_id = parameters['snapshot_id']
 
@@ -278,32 +279,11 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         TaskStatusHandler.update_task(task_id, 'Successfully reverted {0} to {1}'.format(vm_name, snapshot_name))
         TaskStatusHandler.delete_task(task_id)
 
-    @tornado.gen.coroutine
-    @task('Snapshots fetch', 'Started...')
-    def get_snapshots(self, task_id, parameters):
-
-        vm_name = parameters['vm_id']
-
-        TaskStatusHandler.update_task(task_id, 'Searching for vm {0}...'.format(vm_name))
-
-        vm = yield self.application.executor.submit(self.server.get_vm_by_name, parameters['vm_id'])
-
-        TaskStatusHandler.update_task(task_id, 'Found vm {0}, looking for snapshots...'.format(vm_name))
-
-        snapshots = yield self.application.executor.submit(vm.get_snapshots)
-
-        snapshot_list = [snapshot.get_name() for snapshot in snapshots]
-
-        self.send_typed_message(ActionHandler.MSG_SNAPSHOT_LIST,
-                                vm_id=parameters['vm_id'],
-                                snapshot_list=snapshot_list)
-
-        TaskStatusHandler.update_task(task_id, 'Snapshots for VM {0} fetched!'.format(vm_name))
-        TaskStatusHandler.delete_task(task_id)
+        self.send_vm_update(vm_id)
 
     @tornado.gen.coroutine
     @task('VM List fetch', 'Started...')
-    def refresh_vm_list_handler(self, task_id, parameters):
+    def handler_refresh_vm_list(self, task_id, parameters):
         TaskStatusHandler.update_task(task_id, 'Fetching VM list...')
         vm_list = yield self.application.executor.submit(self.get_vm_list)
         TaskStatusHandler.update_task(task_id, 'VM list fetched...')
@@ -314,6 +294,11 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         TaskStatusHandler.delete_task(task_id)
 
         raise tornado.gen.Return()
+
+    def send_vm_update(self, vm_id):
+        vm_mor = VIMor(vm_id, MORTypes.VirtualMachine)
+        vm_list = self._get_vm_list([vm_mor])
+        self.send_typed_message(ActionHandler.MSG_VM, vm=vm_list[0])
 
     @task('Connect to vCenter', 'Initiating connection', 'Connected successfully!')
     def connect(self, task_id, parameters):
