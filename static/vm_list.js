@@ -28,6 +28,13 @@ define(function (require) {
                 React.createElement("table", {className: "table table-hover"}, 
                     React.createElement("thead", null, 
                     React.createElement("tr", null, 
+                        React.createElement("th", null, 
+                            React.createElement(VMFilterForm, null)
+                        ), 
+                        React.createElement("th", null), 
+                        React.createElement("th", null)
+                    ), 
+                    React.createElement("tr", null, 
                         React.createElement("th", null, "Name"), 
                         React.createElement("th", null, "Current Snapshot"), 
                         React.createElement("th", null, "Actions")
@@ -82,6 +89,40 @@ define(function (require) {
                     )
                 )
             )
+        }
+    });
+
+    var VMFilterForm = React.createClass({displayName: "VMFilterForm",
+        mixins: [Reflux.ListenerMixin],
+        filterFormSubmit: function(evt) {
+            evt.preventDefault();
+            var filterQuery = $('#vmFilterInput').val();
+            EventsInteraction.actions.VMListFilterAction(filterQuery);
+        },
+        filterInputChange: function(evt) {
+            var filterQuery = $('#vmFilterInput').val();
+            EventsInteraction.actions.VMListFilterAction(filterQuery);
+        },
+        clearFilterQuery: function() {
+            $('#vmFilterInput').val('');
+            EventsInteraction.actions.VMListFilterAction('');
+        },
+        render: function() {
+            return (
+                React.createElement("form", {className: "form form-inline", action: "#", onSubmit: this.filterFormSubmit}, 
+                    React.createElement("div", {className: "input-group"}, 
+                        React.createElement("input", {type: "search", className: "form-control", placeholder: "Filter VMs...", 
+                               id: "vmFilterInput", 
+                               onChange: this.filterInputChange, 
+                               name: "query"}), 
+      React.createElement("span", {className: "input-group-btn"}, 
+        React.createElement("button", {className: "btn btn-default", type: "button", onClick: this.clearFilterQuery}, 
+            React.createElement("span", {className: "glyphicon glyphicon-remove-circle"})
+        )
+      )
+                    )
+                )
+            );
         }
     });
 

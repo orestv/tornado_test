@@ -1,4 +1,7 @@
-
+div#vmList{
+    width: 60%;
+    margin: auto;
+}
 
 div.status-bar {
     position: fixed;

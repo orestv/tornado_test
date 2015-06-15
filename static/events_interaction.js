@@ -17,6 +17,8 @@ define(function(require){
     var VMListFetchedAction = Reflux.createAction();
     var VMFetchedAction = Reflux.createAction();
 
+    var VMListFilterAction = Reflux.createAction();
+
     var connectAction = Reflux.createAction();
     var connectedAction = Reflux.createAction();
     var disconnectedAction = Reflux.createAction();
@@ -86,7 +88,19 @@ define(function(require){
             this.listenTo(fetchVMListAction, this.fetchVMListHandler);
             this.listenTo(revertToSnapshotAction, this.revertToSnapshotHandler);
             this.listenTo(VMFetchedAction, this.vmUpdatedHandler);
+            this.listenTo(VMListFilterAction, this.vmListFilterhandler);
             this.vmList = [];
+        },
+        vmListFilterhandler: function(query) {
+            query = $.trim(query);
+            var filteredVMList = [];
+            query = query.toLowerCase();
+            for (var i in this.vmList) {
+                var vm = this.vmList[i];
+                if (query == '' || vm.name.toLowerCase().indexOf(query.toLowerCase()) != -1)
+                    filteredVMList.push(vm);
+            }
+            this.trigger(filteredVMList);
         },
         vmListUpdatedHandler: function(vmList) {
             this.vmList = vmList;
@@ -147,6 +161,7 @@ define(function(require){
         actions: {
             fetchVMListAction: fetchVMListAction,
             VMListFetchedAction: VMListFetchedAction,
+            VMListFilterAction: VMListFilterAction,
             connectedAction: connectedAction,
             connectAction: connectAction,
             disconnectedAction: disconnectedAction,

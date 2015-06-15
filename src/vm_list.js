@@ -28,6 +28,13 @@ define(function (require) {
                 <table className="table table-hover">
                     <thead>
                     <tr>
+                        <th>
+                            <VMFilterForm/>
+                        </th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                    <tr>
                         <th>Name</th>
                         <th>Current Snapshot</th>
                         <th>Actions</th>
@@ -82,6 +89,40 @@ define(function (require) {
                     </td>
                 </tr>
             )
+        }
+    });
+
+    var VMFilterForm = React.createClass({
+        mixins: [Reflux.ListenerMixin],
+        filterFormSubmit: function(evt) {
+            evt.preventDefault();
+            var filterQuery = $('#vmFilterInput').val();
+            EventsInteraction.actions.VMListFilterAction(filterQuery);
+        },
+        filterInputChange: function(evt) {
+            var filterQuery = $('#vmFilterInput').val();
+            EventsInteraction.actions.VMListFilterAction(filterQuery);
+        },
+        clearFilterQuery: function() {
+            $('#vmFilterInput').val('');
+            EventsInteraction.actions.VMListFilterAction('');
+        },
+        render: function() {
+            return (
+                <form className="form form-inline" action="#" onSubmit={this.filterFormSubmit}>
+                    <div className="input-group">
+                        <input type="search" className="form-control" placeholder="Filter VMs..."
+                               id="vmFilterInput"
+                               onChange={this.filterInputChange}
+                               name="query"/>
+      <span className="input-group-btn">
+        <button className="btn btn-default" type="button" onClick={this.clearFilterQuery}>
+            <span className="glyphicon glyphicon-remove-circle"></span>
+        </button>
+      </span>
+                    </div>
+                </form>
+            );
         }
     });
 
