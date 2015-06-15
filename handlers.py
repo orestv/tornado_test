@@ -220,14 +220,15 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
 
             if snapshotProp:
                 snapshot_dict = ActionHandler.build_snapshot_dict(snapshotProp.Val.RootSnapshotList)
+                vm_snapshot_dict = {}
+                for snapshot_id, snapshot in snapshot_dict.iteritems():
+                    vm_snapshot_dict[snapshot.Snapshot] = {
+                        'name': snapshot.Name,
+                        'description': snapshot.Description,
+                    }
+
                 vm_dict.update({
-                    'snapshots': {
-                        snapshot.Snapshot: {
-                            'name': snapshot.Name,
-                            'description': snapshot.Description,
-                        }
-                        for snapshot_id, snapshot in snapshot_dict.iteritems()
-                        },
+                    'snapshots': vm_snapshot_dict,
                     'current_snapshot': snapshotProp.Val.CurrentSnapshot,
                 })
 
