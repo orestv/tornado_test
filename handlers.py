@@ -319,7 +319,8 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
             time.sleep(1)
 
             state = yield self.application.executor.submit(vi_task.get_state)
-            progress = yield self.application.executor.submit(vi_task.get_progress) or 100
+            progress = yield self.application.executor.submit(vi_task.get_progress)
+            progress = progress or 100
             TaskStatusHandler.update_task(task_id, 'Creating snapshot %s, %d%%...' % (snapshot_name, progress))
 
         if state == vi_task.STATE_ERROR:
