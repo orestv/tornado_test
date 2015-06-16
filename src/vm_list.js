@@ -87,9 +87,146 @@ define(function (require) {
                     </td>
                     <td>
                         <VMActions vm={this.props.vm}/>
-
+                        <VMSnapshotDialog vm={this.props.vm}/>
                     </td>
                 </tr>
+            )
+        }
+    });
+
+    var VMSnapshotDialog = React.createClass({
+        mixins: [Reflux.ListenerMixin],
+        componentDidMount: function() {
+            this.listenTo(EventsInteraction.stores.SnapshotDialogStore, this.changeDialogState)
+        },
+        changeDialogState: function(vm_id, visible) {
+            var this_vm_id = this.props.vm.id;
+            if (this_vm_id != vm_id)
+                return;
+
+            if (visible)
+                $(this.getModalDialog()).modal('show');
+            else
+                $(this.getModalDialog()).modal('hide');
+        },
+        getModalDialogId: function() {
+            return 'modal_snapshots_' + this.props.vm.id;
+        },
+        getModalDialog: function() {
+            return document.getElementById(this.getModalDialogId());
+        },
+        render: function() {
+            var vm = this.props.vm;
+            return (
+                <div className="modal fade" id={this.getModalDialogId()}>
+                    <div className="modal-dialog">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <button type="button" className="close" data-dismiss="modal" aria-label="Close"><span
+                                    aria-hidden="true">&times;</span></button>
+                                <h4 className="modal-title">Snapshots of {vm.name}</h4>
+                            </div>
+                            <div className="modal-body">
+                                <div className="row">
+                                    <VMSnapshotTable vm={vm} />
+                                </div>
+                                <div className="row">
+                                    <VMSnapshotCreateForm vm={vm}/>
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+    });
+
+    var VMSnapshotTable = React.createClass({
+        mixins: [Reflux.ListenerMixin],
+        render: function() {
+            var vm = this.props.vm;
+            var snapshot_list = [];
+            for (var snapshot_id in this.props.vm.snapshots) {
+                snapshot_list.push(this.props.vm.snapshots[snapshot_id]);
+            }
+            return (
+                <table className="table table-hover">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {snapshot_list.map(function(snapshot) {
+                        return (
+                            <VMSnapshotRow key={snapshot.id} vm={vm} snapshot={snapshot}/>
+                        )
+                    })}
+                    </tbody>
+                </table>
+            );
+        }
+    });
+
+    var VMSnapshotRow = React.createClass({
+        revertToSnapshot: function() {
+            if (confirm('Are you sure you want to revert ' + this.props.vm.name +
+                    ' to snapshot ' + this.props.snapshot.name + '?'))
+                EventsInteraction.actions.revertToSnapshotAction(this.props.vm.id, this.props.snapshot.id);
+        },
+        render: function() {
+            var snapshot = this.props.snapshot;
+            return (
+                <tr>
+                    <td>{snapshot.name}</td>
+                    <td>{snapshot.description}</td>
+                    <td>
+                        <button className="btn btn-default" onClick={this.revertToSnapshot}>
+                            Revert
+                        </button>
+                    </td>
+                </tr>
+            )
+        }
+    });
+
+    var VMSnapshotCreateForm = React.createClass({
+        snapshotFormSubmit: function(evt) {
+            evt.preventDefault();
+
+            var name = '';
+            var description = '';
+            var vm_id = this.props.vm.id;
+
+            var form = evt.target;
+            var form_data = $(form).serializeArray();
+            for (var i in form_data) {
+                var item = form_data[i];
+                if (item.name == 'name')
+                    name = item.value;
+                else if (item.name == 'description')
+                    description = item.value;
+            }
+
+            EventsInteraction.actions.createSnapshotAction(vm_id, name, description);
+
+            $(form).find(':input').val('')
+        },
+        render: function() {
+            return (
+                <form className="form-inline" action="#" onSubmit={this.snapshotFormSubmit}>
+                    <div className="form-group">
+                        <input type="text" name="name" className="form-control" placeholder="Name" required/>
+                        <input type="text" name="description" className="form-control"
+                               placeholder="Description"/>
+                        <button className="btn btn-submit" type="submit">Create</button>
+                    </div>
+                </form>
             )
         }
     });
@@ -139,10 +276,15 @@ define(function (require) {
             var thisVmState = vmState[vmId];
             console.log(thisVmState);
         },
+        showSnapshotsClicked: function() {
+            EventsInteraction.actions.showSnapshotsDialogAction(this.props.vm.id);
+        },
         render: function () {
             return (
                 <div>
-
+                    <button className="btn" onClick={this.showSnapshotsClicked}>
+                        Show Snapshots
+                    </button>
                 </div>
             )
         }

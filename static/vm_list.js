@@ -86,8 +86,145 @@ define(function (require) {
                         currentSnapshotName
                     ), 
                     React.createElement("td", null, 
-                        React.createElement(VMActions, {vm: this.props.vm})
+                        React.createElement(VMActions, {vm: this.props.vm}), 
+                        React.createElement(VMSnapshotDialog, {vm: this.props.vm})
+                    )
+                )
+            )
+        }
+    });
 
+    var VMSnapshotDialog = React.createClass({displayName: "VMSnapshotDialog",
+        mixins: [Reflux.ListenerMixin],
+        componentDidMount: function() {
+            this.listenTo(EventsInteraction.stores.SnapshotDialogStore, this.changeDialogState)
+        },
+        changeDialogState: function(vm_id, visible) {
+            var this_vm_id = this.props.vm.id;
+            if (this_vm_id != vm_id)
+                return;
+
+            if (visible)
+                $(this.getModalDialog()).modal('show');
+            else
+                $(this.getModalDialog()).modal('hide');
+        },
+        getModalDialogId: function() {
+            return 'modal_snapshots_' + this.props.vm.id;
+        },
+        getModalDialog: function() {
+            return document.getElementById(this.getModalDialogId());
+        },
+        render: function() {
+            var vm = this.props.vm;
+            return (
+                React.createElement("div", {className: "modal fade", id: this.getModalDialogId()}, 
+                    React.createElement("div", {className: "modal-dialog"}, 
+                        React.createElement("div", {className: "modal-content"}, 
+                            React.createElement("div", {className: "modal-header"}, 
+                                React.createElement("button", {type: "button", className: "close", "data-dismiss": "modal", "aria-label": "Close"}, React.createElement("span", {
+                                    "aria-hidden": "true"}, "×")), 
+                                React.createElement("h4", {className: "modal-title"}, "Snapshots of ", vm.name)
+                            ), 
+                            React.createElement("div", {className: "modal-body"}, 
+                                React.createElement("div", {className: "row"}, 
+                                    React.createElement(VMSnapshotTable, {vm: vm})
+                                ), 
+                                React.createElement("div", {className: "row"}, 
+                                    React.createElement(VMSnapshotCreateForm, {vm: vm})
+                                )
+                            ), 
+                            React.createElement("div", {className: "modal-footer"}, 
+                                React.createElement("button", {type: "button", className: "btn btn-default", "data-dismiss": "modal"}, "Close")
+                            )
+                        )
+                    )
+                )
+            )
+        }
+    });
+
+    var VMSnapshotTable = React.createClass({displayName: "VMSnapshotTable",
+        mixins: [Reflux.ListenerMixin],
+        render: function() {
+            var vm = this.props.vm;
+            var snapshot_list = [];
+            for (var snapshot_id in this.props.vm.snapshots) {
+                snapshot_list.push(this.props.vm.snapshots[snapshot_id]);
+            }
+            return (
+                React.createElement("table", {className: "table table-hover"}, 
+                    React.createElement("thead", null, 
+                    React.createElement("tr", null, 
+                        React.createElement("th", null, "Name"), 
+                        React.createElement("th", null, "Description"), 
+                        React.createElement("th", null, "Actions")
+                    )
+                    ), 
+                    React.createElement("tbody", null, 
+                    snapshot_list.map(function(snapshot) {
+                        return (
+                            React.createElement(VMSnapshotRow, {key: snapshot.id, vm: vm, snapshot: snapshot})
+                        )
+                    })
+                    )
+                )
+            );
+        }
+    });
+
+    var VMSnapshotRow = React.createClass({displayName: "VMSnapshotRow",
+        revertToSnapshot: function() {
+            if (confirm('Are you sure you want to revert ' + this.props.vm.name +
+                    ' to snapshot ' + this.props.snapshot.name + '?'))
+                EventsInteraction.actions.revertToSnapshotAction(this.props.vm.id, this.props.snapshot.id);
+        },
+        render: function() {
+            var snapshot = this.props.snapshot;
+            return (
+                React.createElement("tr", null, 
+                    React.createElement("td", null, snapshot.name), 
+                    React.createElement("td", null, snapshot.description), 
+                    React.createElement("td", null, 
+                        React.createElement("button", {className: "btn btn-default", onClick: this.revertToSnapshot}, 
+                            "Revert"
+                        )
+                    )
+                )
+            )
+        }
+    });
+
+    var VMSnapshotCreateForm = React.createClass({displayName: "VMSnapshotCreateForm",
+        snapshotFormSubmit: function(evt) {
+            evt.preventDefault();
+
+            var name = '';
+            var description = '';
+            var vm_id = this.props.vm.id;
+
+            var form = evt.target;
+            var form_data = $(form).serializeArray();
+            for (var i in form_data) {
+                var item = form_data[i];
+                if (item.name == 'name')
+                    name = item.value;
+                else if (item.name == 'description')
+                    description = item.value;
+            }
+
+            EventsInteraction.actions.createSnapshotAction(vm_id, name, description);
+
+            $(form).find(':input').val('')
+        },
+        render: function() {
+            return (
+                React.createElement("form", {className: "form-inline", action: "#", onSubmit: this.snapshotFormSubmit}, 
+                    React.createElement("div", {className: "form-group"}, 
+                        React.createElement("input", {type: "text", name: "name", className: "form-control", placeholder: "Name", required: true}), 
+                        React.createElement("input", {type: "text", name: "description", className: "form-control", 
+                               placeholder: "Description"}), 
+                        React.createElement("button", {className: "btn btn-submit", type: "submit"}, "Create")
                     )
                 )
             )
@@ -139,10 +276,15 @@ define(function (require) {
             var thisVmState = vmState[vmId];
             console.log(thisVmState);
         },
+        showSnapshotsClicked: function() {
+            EventsInteraction.actions.showSnapshotsDialogAction(this.props.vm.id);
+        },
         render: function () {
             return (
-                React.createElement("div", null
-
+                React.createElement("div", null, 
+                    React.createElement("button", {className: "btn", onClick: this.showSnapshotsClicked}, 
+                        "Show Snapshots"
+                    )
                 )
             )
         }

@@ -135,6 +135,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
     ACTION_CONNECT = 'connect'
     ACTION_FETCH_SNAPSHOTS = 'fetch_snapshots'
     ACTION_REVERT_TO_SNAPSHOT = 'revert_to_snapshot'
+    ACTION_CREATE_SNAPSHOT = 'create_snapshot'
 
     MSG_VM_LIST = 'vm_list'
     MSG_VM = 'vm'
@@ -160,6 +161,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
             self.ACTION_REFRESH_VM_LIST: self.handler_refresh_vm_list,
             self.ACTION_CONNECT: self.connect,
             self.ACTION_REVERT_TO_SNAPSHOT: self.handler_revert_to_snapshot,
+            self.ACTION_CREATE_SNAPSHOT: self.handler_create_snapshot,
         }
         return handlers[action]
 
@@ -223,13 +225,20 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
                 vm_snapshot_dict = {}
                 for snapshot_id, snapshot in snapshot_dict.iteritems():
                     vm_snapshot_dict[snapshot.Snapshot] = {
+                        'id': snapshot.Snapshot,
                         'name': snapshot.Name,
                         'description': snapshot.Description,
                     }
 
+                current_snapshot_id = None
+                try:
+                    current_snapshot_id = snapshotProp.Val.CurrentSnapshot
+                except AttributeError:
+                    pass
+
                 vm_dict.update({
                     'snapshots': vm_snapshot_dict,
-                    'current_snapshot': snapshotProp.Val.CurrentSnapshot,
+                    'current_snapshot': current_snapshot_id,
                 })
 
             result_list.append(vm_dict)
@@ -278,6 +287,45 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
                               FaultTypes.TASK_ERROR)
 
         TaskStatusHandler.update_task(task_id, 'Successfully reverted {0} to {1}'.format(vm_name, snapshot_name))
+        TaskStatusHandler.delete_task(task_id)
+
+        self.send_vm_update(vm_id)
+
+    @tornado.gen.coroutine
+    @task('Create snapshot', 'Started...')
+    def handler_create_snapshot(self, task_id, parameters):
+        vm_id = parameters['vm_id']
+        snapshot_name = parameters['snapshot_name']
+        snapshot_description = parameters['snapshot_description']
+
+        vm_mor = VIMor(vm_id, MORTypes.VirtualMachine)
+
+        request = VI.CreateSnapshot_TaskRequestMsg()
+        mor_vm = request.new__this(vm_mor)
+        mor_vm.set_attribute_type(vm_mor.get_attribute_type())
+        request.set_element__this(mor_vm)
+        request.set_element_name(snapshot_name)
+        if snapshot_description:
+            request.set_element_description(snapshot_description)
+        request.set_element_memory(True)
+        request.set_element_quiesce(False)
+
+        vi_task = self.server._proxy.CreateSnapshot_Task(request)._returnval
+
+        vi_task = VITask(vi_task, self.server)
+
+        state = None
+        while state not in (vi_task.STATE_SUCCESS, vi_task.STATE_ERROR):
+            time.sleep(1)
+
+            state = yield self.application.executor.submit(vi_task.get_state)
+            progress = yield self.application.executor.submit(vi_task.get_progress) or 100
+            TaskStatusHandler.update_task(task_id, 'Creating snapshot %s, %d%%...' % (snapshot_name, progress))
+
+        if state == vi_task.STATE_ERROR:
+            raise Exception(vi_task.get_error_message())
+
+        TaskStatusHandler.update_task(task_id, 'Snapshot %s created!' % (snapshot_name,))
         TaskStatusHandler.delete_task(task_id)
 
         self.send_vm_update(vm_id)

@@ -27,6 +27,10 @@ define(function(require){
     var snapshotsFetchedAction = Reflux.createAction();
     var currentSnapshotFetchedAction = Reflux.createAction();
     var revertToSnapshotAction = Reflux.createAction();
+    var createSnapshotAction = Reflux.createAction();
+
+    var showSnapshotsDialogAction = Reflux.createAction();
+    var hideSnapshotsDialogAction = Reflux.createAction();
 
     var ConnectionStore = Reflux.createStore({
         init: function() {
@@ -82,11 +86,27 @@ define(function(require){
         }
     });
 
+    var SnapshotDialogStore = Reflux.createStore({
+        init: function() {
+            this.listenTo(showSnapshotsDialogAction, this.showSnapshotDialog);
+            this.listenTo(hideSnapshotsDialogAction, this.hideSnapshotDialog);
+        },
+        showSnapshotDialog: function(vm_id) {
+            this.trigger(vm_id, true);
+        },
+        hideSnapshotDialog: function(vm_id) {
+            this.trigger(vm_id, false);
+        }
+    });
+
     var VMListStore = Reflux.createStore({
         init: function() {
             this.listenTo(VMListFetchedAction, this.vmListUpdatedHandler);
             this.listenTo(fetchVMListAction, this.fetchVMListHandler);
+
             this.listenTo(revertToSnapshotAction, this.revertToSnapshotHandler);
+            this.listenTo(createSnapshotAction, this.createSnapshotHandler);
+
             this.listenTo(VMFetchedAction, this.vmUpdatedHandler);
             this.listenTo(VMListFilterAction, this.vmListFilterhandler);
             this.vmList = [];
@@ -132,6 +152,17 @@ define(function(require){
                 }
             };
             wsInteract.send(JSON.stringify(messageDict))
+        },
+        createSnapshotHandler: function(vm_id, snapshot_name, snapshot_description) {
+            var messageDict = {
+                action: 'create_snapshot',
+                parameters: {
+                    vm_id: vm_id,
+                    snapshot_name: snapshot_name,
+                    snapshot_description: snapshot_description
+                }
+            };
+            wsInteract.send(JSON.stringify(messageDict));
         }
     });
 
@@ -161,18 +192,27 @@ define(function(require){
         actions: {
             fetchVMListAction: fetchVMListAction,
             VMListFetchedAction: VMListFetchedAction,
+
             VMListFilterAction: VMListFilterAction,
+
             connectedAction: connectedAction,
             connectAction: connectAction,
             disconnectedAction: disconnectedAction,
+
             fetchSnapshotsAction: fetchSnapshotsAction,
             snapshotsFetchedAction: snapshotsFetchedAction,
-            revertToSnapshotAction: revertToSnapshotAction
+
+            revertToSnapshotAction: revertToSnapshotAction,
+            createSnapshotAction: createSnapshotAction,
+
+            showSnapshotsDialogAction: showSnapshotsDialogAction,
+            hideSnapshotsDialogAction: hideSnapshotsDialogAction
         },
         stores: {
             VMListStore: VMListStore,
             ConnectionStore: ConnectionStore,
-            VMStateStore: VMStateStore
+            VMStateStore: VMStateStore,
+            SnapshotDialogStore: SnapshotDialogStore
         }
     }
 });
