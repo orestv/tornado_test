@@ -110,28 +110,39 @@ define(function(require){
             this.listenTo(VMFetchedAction, this.vmUpdatedHandler);
             this.listenTo(VMListFilterAction, this.vmListFilterhandler);
             this.vmList = [];
+            this.filterQuery = '';
         },
-        vmListFilterhandler: function(query) {
+        filterVMList: function(vmList, query) {
             query = $.trim(query);
             var filteredVMList = [];
             query = query.toLowerCase();
-            for (var i in this.vmList) {
-                var vm = this.vmList[i];
+            for (var i in vmList) {
+                var vm = vmList[i];
                 if (query == '' || vm.name.toLowerCase().indexOf(query.toLowerCase()) != -1)
                     filteredVMList.push(vm);
             }
-            this.trigger(filteredVMList);
+            return filteredVMList;
+        },
+        triggerFilteredList: function() {
+            if (!this.filterQuery)
+                this.trigger(this.vmList);
+            else
+                this.trigger(this.filterVMList(this.vmList, this.filterQuery));
+        },
+        vmListFilterhandler: function(query) {
+            this.filterQuery = query;
+            this.triggerFilteredList();
         },
         vmListUpdatedHandler: function(vmList) {
             this.vmList = vmList;
-            this.trigger(this.vmList);
+            this.triggerFilteredList();
         },
         vmUpdatedHandler: function(updatedVm) {
             for (var i = 0; i < this.vmList.length; i++) {
                 if (vm.id == updatedVm.id){
                     this.vmList[i] = updatedVm;
                     console.log('Updating VM ' + updatedVm.id);
-                    this.trigger(this.vmList);
+                    this.triggerFilteredList();
                     break;
                 }
             }
