@@ -12,16 +12,24 @@ define(function (require) {
         mixins: [Reflux.ListenerMixin],
         getInitialState: function () {
             return {
-                vms: []
+                vms: [],
+                connected: false
             }
         },
         componentDidMount: function () {
             this.listenTo(EventsInteraction.stores.VMListStore, this.loadVMList);
+            this.listenTo(EventsInteraction.stores.ConnectionStore, this.connectionStateChanged);
         },
         loadVMList: function (vmList) {
             this.setState({
                 vms: vmList
             })
+        },
+        btnRefreshClicked: function() {
+            EventsInteraction.actions.fetchVMListAction();
+        },
+        connectionStateChanged: function(connected, connecting, vCenter) {
+            this.setState({connected: connected});
         },
         render: function () {
             return (
@@ -33,7 +41,12 @@ define(function (require) {
                                 <VMFilterForm/>
                             </th>
                             <th></th>
-                            <th></th>
+                            <th>
+                                <button className="btn" onClick={this.btnRefreshClicked}
+                                    disabled={this.state.connected ? '' : 'disabled'}>
+                                    <span className="glyphicon glyphicon-refresh"></span>
+                                </button>
+                            </th>
                         </tr>
                         <tr>
                             <th>Name</th>
