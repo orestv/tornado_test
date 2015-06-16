@@ -28,6 +28,7 @@ define(function(require){
     var currentSnapshotFetchedAction = Reflux.createAction();
     var revertToSnapshotAction = Reflux.createAction();
     var createSnapshotAction = Reflux.createAction();
+    var deleteSnapshotAction = Reflux.createAction();
 
     var showSnapshotsDialogAction = Reflux.createAction();
     var hideSnapshotsDialogAction = Reflux.createAction();
@@ -106,6 +107,7 @@ define(function(require){
 
             this.listenTo(revertToSnapshotAction, this.revertToSnapshotHandler);
             this.listenTo(createSnapshotAction, this.createSnapshotHandler);
+            this.listenTo(deleteSnapshotAction, this.deleteSnapshotHandler);
 
             this.listenTo(VMFetchedAction, this.vmUpdatedHandler);
             this.listenTo(VMListFilterAction, this.vmListFilterhandler);
@@ -138,7 +140,8 @@ define(function(require){
             this.triggerFilteredList();
         },
         vmUpdatedHandler: function(updatedVm) {
-            for (var i = 0; i < this.vmList.length; i++) {
+            for (var i in this.vmList) {
+                var vm = this.vmList[i];
                 if (vm.id == updatedVm.id){
                     this.vmList[i] = updatedVm;
                     this.triggerFilteredList();
@@ -173,6 +176,16 @@ define(function(require){
                 }
             };
             wsInteract.send(JSON.stringify(messageDict));
+        },
+        deleteSnapshotHandler: function(vm_id, snapshot_id) {
+            var messageDict = {
+                action: 'delete_snapshot',
+                parameters: {
+                    snapshot_id: snapshot_id,
+                    vm_id: vm_id
+                }
+            };
+            wsInteract.send(JSON.stringify(messageDict));
         }
     });
 
@@ -191,6 +204,9 @@ define(function(require){
                 break;
             case 'snapshot_list':
                 snapshotsFetchedAction(data.parameters);
+                break;
+            case 'vm':
+                VMFetchedAction(data.parameters.vm);
                 break;
         }
     };
@@ -214,6 +230,7 @@ define(function(require){
 
             revertToSnapshotAction: revertToSnapshotAction,
             createSnapshotAction: createSnapshotAction,
+            deleteSnapshotAction: deleteSnapshotAction,
 
             showSnapshotsDialogAction: showSnapshotsDialogAction,
             hideSnapshotsDialogAction: hideSnapshotsDialogAction

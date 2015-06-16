@@ -28,8 +28,8 @@ define(function (require) {
         btnRefreshClicked: function() {
             EventsInteraction.actions.fetchVMListAction();
         },
-        connectionStateChanged: function(connected, connecting, vCenter) {
-            this.setState({connected: connected});
+        connectionStateChanged: function(connectionState) {
+            this.setState({connected: connectionState.connected});
         },
         render: function () {
             return (
@@ -192,6 +192,11 @@ define(function (require) {
                     ' to snapshot ' + this.props.snapshot.name + '?'))
                 EventsInteraction.actions.revertToSnapshotAction(this.props.vm.id, this.props.snapshot.id);
         },
+        deleteSnapshot: function() {
+            if (confirm('Are you sure you want to delete snapshot ' + this.props.snapshot.name +
+                    'on VM ' + this.props.vm.name + '?'))
+                EventsInteraction.actions.deleteSnapshotAction(this.props.vm.id, this.props.snapshot.id);
+        },
         render: function() {
             var snapshot = this.props.snapshot;
             return (
@@ -201,6 +206,9 @@ define(function (require) {
                     <td>
                         <button className="btn btn-default" onClick={this.revertToSnapshot}>
                             Revert
+                        </button>
+                        <button className="btn btn-danger" onClick={this.deleteSnapshot}>
+                            Delete
                         </button>
                     </td>
                 </tr>

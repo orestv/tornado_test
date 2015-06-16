@@ -136,6 +136,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
     ACTION_FETCH_SNAPSHOTS = 'fetch_snapshots'
     ACTION_REVERT_TO_SNAPSHOT = 'revert_to_snapshot'
     ACTION_CREATE_SNAPSHOT = 'create_snapshot'
+    ACTION_DELETE_SNAPSHOT = 'delete_snapshot'
 
     MSG_VM_LIST = 'vm_list'
     MSG_VM = 'vm'
@@ -162,6 +163,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
             self.ACTION_CONNECT: self.connect,
             self.ACTION_REVERT_TO_SNAPSHOT: self.handler_revert_to_snapshot,
             self.ACTION_CREATE_SNAPSHOT: self.handler_create_snapshot,
+            self.ACTION_DELETE_SNAPSHOT: self.handler_delete_snapshot,
         }
         return handlers[action]
 
@@ -287,6 +289,40 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
                               FaultTypes.TASK_ERROR)
 
         TaskStatusHandler.update_task(task_id, 'Successfully reverted {0} to {1}'.format(vm_name, snapshot_name))
+        TaskStatusHandler.delete_task(task_id)
+
+        self.send_vm_update(vm_id)
+
+    @tornado.gen.coroutine
+    @task('Delete snapshot', 'Started...')
+    def handler_delete_snapshot(self, task_id, parameters):
+        snapshot_id = parameters['snapshot_id']
+        vm_id = parameters['vm_id']
+        snapshot_mor = VIMor(snapshot_id, MORTypes.VirtualMachineSnapshot)
+
+        request = VI.RemoveSnapshot_TaskRequestMsg()
+
+        mor_snap = request.new__this(snapshot_mor)
+        mor_snap.set_attribute_type(snapshot_mor.get_attribute_type())
+        request.set_element__this(mor_snap)
+        request.set_element_removeChildren(True)
+
+        TaskStatusHandler.update_task(task_id, 'Starting background task...')
+
+        task = (yield self.application.executor.submit(self.server._proxy.RemoveSnapshot_Task, request))._returnval
+
+        TaskStatusHandler.update_task(task_id, 'Background task started, waiting for completion...')
+
+        vi_task = yield self.application.executor.submit(VITask, task, self.server)
+
+        status = yield self.application.executor.submit(vi_task.wait_for_state, [vi_task.STATE_SUCCESS,
+                                                                                 vi_task.STATE_ERROR])
+
+        if status == vi_task.STATE_ERROR:
+            raise VIException(vi_task.get_error_message(),
+                              FaultTypes.TASK_ERROR)
+
+        TaskStatusHandler.update_task(task_id, 'Snapshot deleted')
         TaskStatusHandler.delete_task(task_id)
 
         self.send_vm_update(vm_id)
