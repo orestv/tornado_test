@@ -141,7 +141,6 @@ define(function(require){
             for (var i = 0; i < this.vmList.length; i++) {
                 if (vm.id == updatedVm.id){
                     this.vmList[i] = updatedVm;
-                    console.log('Updating VM ' + updatedVm.id);
                     this.triggerFilteredList();
                     break;
                 }
