@@ -305,7 +305,7 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
         mor_snap = request.new__this(snapshot_mor)
         mor_snap.set_attribute_type(snapshot_mor.get_attribute_type())
         request.set_element__this(mor_snap)
-        request.set_element_removeChildren(True)
+        request.set_element_removeChildren(False)
 
         TaskStatusHandler.update_task(task_id, 'Starting background task...')
 
@@ -360,7 +360,11 @@ class ActionHandler(tornado.websocket.WebSocketHandler):
             TaskStatusHandler.update_task(task_id, 'Creating snapshot %s, %d%%...' % (snapshot_name, progress))
 
         if state == vi_task.STATE_ERROR:
-            raise Exception(vi_task.get_error_message())
+            error_message = yield self.application.executor.submit(vi_task.get_error_message)
+            TaskStatusHandler.update_task(task_id, 'Error creating snapshot {0}: {1}'.format(
+                snapshot_name, error_message))
+            TaskStatusHandler.delete_task(task_id)
+            raise Exception(error_message)
 
         TaskStatusHandler.update_task(task_id, 'Snapshot %s created!' % (snapshot_name,))
         TaskStatusHandler.delete_task(task_id)
